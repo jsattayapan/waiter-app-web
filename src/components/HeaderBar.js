@@ -40,6 +40,8 @@ const tableNumberStyle = {
 }
 
 const headerStyle = {
+  background: '#EDEDED',
+  color: 'black'
 }
 
 const appNameStyle = {

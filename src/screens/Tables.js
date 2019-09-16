@@ -120,13 +120,13 @@ class Tables extends React.Component{
         {this.state.showPopup && <RegisterTablePopup togglePopup={this.togglePopup} submitCreateTable={this.submitCreateTable} tableNumber={this.state.tableNumber} />}
             <HeaderBar name={this.props.user.name} buttonFunction={this.logoutButtonClick} buttonLabel="ออกจากระบบ"/>
             <div className="row">
-                <div className='col-sm-2' style={{background: 'green'}}>
+                <div className='col-sm-2' style={{background: '#ACC538'}}>
                   {this.props.tables.allTables.map((section, index) => (
                     <TableSection label={section.section} key={index} onclick={this.changeTableSection} />
                   ))
                 }
                 </div>
-                <div className='col-sm-10' style={{background: '#e3e3e3'}}>
+                <div className='col-sm-10' >
                   <div className='row'>
                     {this.props.tables.sectionTables.map((table, index) => (
                       <TableBox
@@ -157,19 +157,16 @@ class TableSection extends React.Component{
 
   render(){
     const style = {
-      height: '100px',
-      border: '2px solid white',
-      color: 'white',
-      borderRadius: '15px',
       margin: '10px',
-      textAlign: 'center',
-      padding: '20%',
-      cursor: 'pointer'
+      cursor: 'pointer',
+      background: '#fff'
     }
     return(
 
-        <div style={style} onClick={() => this.props.onclick(this.props.label)}>
-          <h3>{this.props.label}</h3>
+        <div className="row" style={style} onClick={() => this.props.onclick(this.props.label)}>
+          <div className="col-sm-12 text-center">
+            <h4>{this.props.label}</h4>
+          </div>
         </div>
 
     )
@@ -178,16 +175,16 @@ class TableSection extends React.Component{
 
 const TableBox = (props) => {
   const style = {
-    background: props.tableInfo.status === 'opened'? '#5291ff' : props.tableInfo.status === 'checked'? '#9e0000' : '#999999',
+    background: props.tableInfo.status === 'opened'? '#5291ff' : props.tableInfo.status === 'checked'? '#C82333' : '#C6E0F2',
   }
   const time = moment(props.tableInfo.timestamp);
     return(
       <div className="col-2">
       <div className="row">
         <div className='tableBox' style={style} onClick={() => props.link(props.tableInfo)}>
-          <h3>{props.tableInfo.number}</h3>
+          <h3 style={{color: 'black'}}>{props.tableInfo.number}</h3>
           {props.tableInfo.status === null ? '':
-            <p>
+            <p style={{color: 'black'}}>
               <span>
                 <img alt="Number of customer" src={peopleIcon} width='20px' />
               </span> x {props.tableInfo.number_of_guest} | Zone: {props.tableInfo.zone}<br /> {time.format('hh:mm A')}

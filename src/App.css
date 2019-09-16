@@ -1,14 +1,10 @@
 .tableBox{
-  color: white;
   height: 110px;
   width: 100%;
   margin: 10px 10px;
-  border: 2px solid black;
-  border-radius: 15px;
   text-align: center;
   padding : 15px 0;
   cursor: pointer;
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
 }
 
 .tableBox:hover{

@@ -299,11 +299,29 @@ class CustomerTable extends React.Component {
 
       })
     }
+    onDiscountSubmit = (payload) => {
+      this.setState({
+        discount: {
+          show:false
+        }
+      });
+      if(payload.type === ''){
+        
+      }
+    }
+    onDiscountClose = () => {
+      this.setState({
+        discount: {
+          show:false
+        }
+      })
+    }
     render(){
       return(
         <div className="container">
           {this.state.discount.show && <DiscountOption
-
+            onClose={this.onDiscountClose}
+            onSubmit={this.onDiscountSubmit}
           />}
           {this.state.editNewItem.show && <EditNewMenuItem
             onClickClose={this.onEditClickClose}
@@ -808,12 +826,45 @@ class DiscountOption extends React.Component{
   constructor(props){
     super(props);
     this.state = {
-      type: 'percentage'
+      type: 'percentage',
+      percentage: '',
+      section: 'f&b',
+      amount : '',
+      remark: ''
     }
   }
   onTypeChange = (value) => {
     this.setState({
-      type: value
+      type: value,
+      percentage: value !== 'percentage' ? '' : this.state.percentage,
+      amount: value !== 'amount' ? '' : this.state.amount,
+      remark: value !== 'complimentary' ? '' : this.state.remark
+    })
+  }
+  onSectionChnage = (value) => {
+    this.setState({
+      section: value
+    })
+  }
+  onChangePercentage = (e) => {
+    const amount = e.target.value;
+    if(!amount || amount.match(/^[1-9][0-9]?$|^100$/)){
+      this.setState({
+        percentage: amount
+      })
+    }
+  }
+  onChangeAmount = (e) => {
+    const amount = e.target.value;
+    if(!amount || amount.match(/^\d{1,}?$/)){
+      this.setState({
+        amount: amount
+      })
+    }
+  }
+  onRemarkChange = (e) =>{
+    this.setState({
+      remark: e.target.value
     })
   }
   render(){
@@ -829,57 +880,92 @@ class DiscountOption extends React.Component{
             <h6>ส่วนลดโดย:</h6>
             <div className="row" style={{marginTop: '20px'}}>
               <div className="col-sm-4 text-center">
-                <label class="radio-inline"><input type="radio" onClick={() =>this.onTypeChange('percentage')} name="optradio" /> เปอร์เซ็นต์</label>
+                <label class="radio-inline">
+                  <input type="radio"
+                    onClick={() =>this.onTypeChange('percentage')}
+                    name="optradio"
+                    checked={this.state.type === 'percentage'}
+                  /> เปอร์เซ็นต์</label>
               </div>
               <div className="col-sm-4 text-center">
-                <label class="radio-inline"><input type="radio" onClick={() =>this.onTypeChange('amount')} name="optradio" /> จำนวนเงิน</label>
+                <label class="radio-inline">
+                  <input type="radio"
+                    onClick={() =>this.onTypeChange('amount')}
+                    name="optradio"
+                    checked={this.state.type === 'amount'}
+                  /> จำนวนเงิน</label>
               </div>
               <div className="col-sm-4 text-center">
-                <label class="radio-inline"><input type="radio" onClick={() =>this.onTypeChange('complimentary')} name="optradio" /> Compl.</label>
+                <label class="radio-inline">
+                  <input type="radio"
+                    onClick={() =>this.onTypeChange('complimentary')}
+                    name="optradio"
+                    checked={this.state.type === 'complimentary'}
+                  /> Compl.</label>
               </div>
             </div>
             <br />
             <h6>รายการที่ใช้ส่วนลด:</h6>
             <div className="row" style={{marginTop: '20px'}}>
               <div className="col-sm-4 text-center">
-                <label class="radio-inline"><input type="radio"  name="optradio" disabled={this.state.type !== 'percentage'} /> อาหาร & เครื่องดื่ม</label>
+                <label class="radio-inline">
+                  <input type="radio"
+                    name="section"
+                    onClick={() =>this.onSectionChnage('f&b')}
+                    disabled={this.state.type !== 'percentage'}
+                    checked={this.state.section === 'f&b'}
+                  /> อาหาร & เครื่องดื่ม</label>
               </div>
               <div className="col-sm-4 text-center">
-                <label class="radio-inline"><input type="radio"  name="optradio" disabled={this.state.type !== 'percentage'} /> เฉพาะอาหาร</label>
+                <label class="radio-inline">
+                  <input type="radio"
+                    name="section"
+                    onClick={() =>this.onSectionChnage('f')}
+                    disabled={this.state.type !== 'percentage'}
+                    checked={this.state.section === 'f'}
+                  /> เฉพาะอาหาร</label>
               </div>
               <div className="col-sm-4 text-center">
-                <label class="radio-inline"><input type="radio"  name="optradio" disabled={this.state.type !== 'percentage'} /> เฉพาะเครื่องดื่ม</label>
+                <label class="radio-inline">
+                  <input type="radio"
+                    name="section"
+                    onClick={() =>this.onSectionChnage('b')}
+                    disabled={this.state.type !== 'percentage'}
+                    checked={this.state.section === 'b'}
+                  /> เฉพาะเครื่องดื่ม</label>
               </div>
             </div>
             <div className="row" style={{marginTop: '20px'}}>
               <div className="col-sm-8 mx-auto">
                 {this.state.type === 'percentage' ?
                 <div className="input-group mb-3">
-                  <input type="percentage" className="form-control" placeholder="จำนวน" aria-label="Recipient's username" aria-describedby="basic-addon2" />
+                  <input type="text" className="form-control" placeholder="จำนวน" value={this.state.percentage} onChange={this.onChangePercentage} />
                   <div className="input-group-append">
                     <span className="input-group-text" id="basic-addon2">%.</span>
                   </div>
                 </div>
                 : this.state.type === 'amount' ?
                 <div className="input-group mb-3">
-                  <input type="currency" className="form-control" placeholder="จำนวน" aria-label="Recipient's username" aria-describedby="basic-addon2" />
+                  <input type="text" className="form-control" placeholder="จำนวน" value={this.state.amount} onChange={this.onChangeAmount}  />
                   <div className="input-group-append">
                     <span className="input-group-text" id="basic-addon2">บาท.</span>
                   </div>
                 </div> :
                 <div className="input-group mb-3">
-                  <input type="currency" className="form-control" placeholder="หมายเหตุ" aria-label="Recipient's username" aria-describedby="basic-addon2" />
-
+                  <input onChange={this.onRemarkChange} type="currency" className="form-control" placeholder="หมายเหตุ" value={this.state.remark} />
                 </div>
               }
               </div>
             </div>
             <div className="row" style={{marginTop: '20px'}}>
               <div className="col-sm-6 text-center">
-                <button className="btn btn-secondary">ปิด</button>
+                <button onClick={() => this.props.onClose()} className="btn btn-secondary">ปิด</button>
               </div>
               <div className="col-sm-6 text-center">
-                <button className="btn btn-warning">ยกเลิก</button>
+                <button
+                  disabled={!(this.state.amount || this.state.percentage || this.state.remark) }
+                  onClick={() => this.props.onSubmit(this.state)}
+                  className="btn btn-warning" >ยืนยัน</button>
               </div>
             </div>
           </div>
