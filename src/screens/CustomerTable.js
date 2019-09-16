@@ -6,9 +6,15 @@ import './CustomerTableStyle.css';
 import swal from 'sweetalert';
 
 import { updateTableStatus } from './../brains/tables';
-import { closeCustomerTable, sendNewOrderToServer, cancelOrder, checkBill } from './../brains/customerTable';
+import { closeCustomerTable,
+          sendNewOrderToServer,
+          cancelOrder,
+          checkBill,
+          getCurrentOrder,
+          getTableDiscount,
+          submitTableDiscount
+        } from './../brains/customerTable';
 import { getAllFoodItems } from './../brains/foodItems';
-import { getCurrentOrder } from './../brains/customerTable';
 
 import { getFoodItemsByCategory } from './../Redux/selectors/foodItems';
 import { loadAllFoodItems, setSelectedFoodItems } from './../Redux/actions/foodItems';
@@ -41,7 +47,7 @@ class CustomerTable extends React.Component {
         payload: {}
       },
       discount: {
-        show: true,
+        show: false,
         payload: {}
       },
       codeInput: '',
@@ -295,19 +301,25 @@ class CustomerTable extends React.Component {
       })
     }
     discountHandler = () => {
-      this.setState({
-
-      })
+      getTableDiscount(this.props.customerTable.id, (payload) => {
+        this.setState({
+          discount: {
+            show: true,
+            payload
+          }
+        })
+      });
     }
     onDiscountSubmit = (payload) => {
-      this.setState({
-        discount: {
-          show:false
-        }
-      });
-      if(payload.type === ''){
-        
-      }
+      submitTableDiscount(this.props.customerTable.id, this.props.user.id, payload, () => {
+        swal('เสร็จสิ้น','รายการถูกบันทึก','success').then(() => {
+          this.setState({
+            discount: {
+              show:false
+            }
+          });
+        })
+      })
     }
     onDiscountClose = () => {
       this.setState({
@@ -322,6 +334,7 @@ class CustomerTable extends React.Component {
           {this.state.discount.show && <DiscountOption
             onClose={this.onDiscountClose}
             onSubmit={this.onDiscountSubmit}
+            info={this.state.discount.payload}
           />}
           {this.state.editNewItem.show && <EditNewMenuItem
             onClickClose={this.onEditClickClose}
@@ -510,9 +523,12 @@ class CustomerTable extends React.Component {
                                   break;
                                 case 'opened':
                                   return <td valid="top" width="75%">เปิดโต๊ะ</td>;
-                                  break;
+                                break;
                                 case 'checked':
                                 return <td valid="top" width="75%">เรียกเช็คบิล</td>;
+                                break;
+                                case 'discount':
+                                return <td valid="top" width="75%">ใส่ส่วนลดเป็น: {log.detail}</td>;
                                 default: return <td valid="top" width="75%"></td>
                               }
                             })()
@@ -826,11 +842,11 @@ class DiscountOption extends React.Component{
   constructor(props){
     super(props);
     this.state = {
-      type: 'percentage',
-      percentage: '',
-      section: 'f&b',
-      amount : '',
-      remark: ''
+      type: props.info !== undefined ? props.info.type : 'percentage',
+      percentage: props.info !== undefined ? props.info.amount : '',
+      section: props.info !== undefined ? props.info.section : 'f&b',
+      amount : props.info !== undefined ? props.info.amount : '',
+      remark: props.info !== undefined ? props.info.remark : ''
     }
   }
   onTypeChange = (value) => {

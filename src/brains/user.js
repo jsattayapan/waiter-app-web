@@ -14,7 +14,7 @@ export function login(number, passcode, callback){
     }).catch(e => {
       callback({
         status: false,
-        msg: e.response.data.msg
+        msg: e.response.data.msg 
       });
     });
 }

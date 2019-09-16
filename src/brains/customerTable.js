@@ -67,9 +67,28 @@ export const getTableLogs = (table_id, callback) => {
       logs.sort(function(a,b){
         return new Date(a.timestamp) - new Date(b.timestamp);
       });
+      console.log(logs);
       callback(logs);
     });
   });
+}
+
+export const getTableDiscount = (table_id, callback) => {
+    const url = `${ serverIpAddress }api/restaurant/tables/customer-tables/customer-table-discount/${table_id}`;
+    axios.get(url).then((res) => {
+      console.log(res.data);
+      callback(res.data[0]);
+    })
+}
+
+export const submitTableDiscount = (table_id, user_id, payload, callback) => {
+  const url = `${ serverIpAddress }api/restaurant/tables/customer-tables/customer-table-discount/`;
+  axios.post(url, {table_id, user_id, payload}).then(res => {
+    console.log(res);
+    if(res.status === 200){
+      callback();
+    }
+  })
 }
 
 
