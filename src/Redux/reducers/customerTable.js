@@ -14,6 +14,11 @@ export default (state = customerTableReducerDefaultState, action) => {
         ...state,
         currentOrders: action.orders
       }
+    case 'SET_TABLE_STATUS':
+    return {
+      ...state,
+      status: action.status
+    }
     default:
       return state;
   }

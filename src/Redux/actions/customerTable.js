@@ -12,3 +12,8 @@ export const setSelectedTable = (tableInfo) => ({
   type: 'SET_SELECTED_TABLE',
   payload: tableInfo
 });
+
+export const updateSelectedTableStatus = (status) => ({
+  type: 'SET_TABLE_STATUS',
+  status
+})

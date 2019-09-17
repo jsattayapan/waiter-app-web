@@ -91,8 +91,52 @@ export const submitTableDiscount = (table_id, user_id, payload, callback) => {
   })
 }
 
+export const getCustomerTableInfo = (table_id, callback) => {
+  const url = `${ serverIpAddress }api/restaurant/tables/customer-tables/${ table_id}`;
+  axios.get(url).then((data) => {
+    if(data.status === 200){
+      callback(data.data);
+    }else{
+      console.log(data);
+    }
+  })
+}
+
+export const getCustomerTablePayment = (table_id, callback) => {
+  const url = `${ serverIpAddress }api/restaurant/tables/customer-tables/payment/${ table_id}`;
+  axios.get(url).then((data) => {
+    if(data.status === 200){
+      callback(data.data);
+    }else{
+      console.log(data);
+    }
+  })
+}
 
 
+export const completePayment = ({
+  total_amount,
+  receive_amount,
+  method,
+  table_id,
+  user_id
+}, callback) => {
+
+  const receive_total_amount = method === 'cash' ? receive_amount : total_amount;
+
+  const url = `${ serverIpAddress }api/restaurant/tables/customer-tables/complete-payment/`;
+  axios.post(url, {total_amount,
+  receive_amount: receive_total_amount,
+  method,
+  table_id,
+  user_id}).then(data => {
+    if(data.status === 200){
+      callback();
+    }else{
+      console.log(data);
+    }
+  })
+}
 
 // var detail = '';
 // switch (status.status) {

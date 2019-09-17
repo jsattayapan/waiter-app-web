@@ -1,40 +1,68 @@
 import React from 'react';
-import { connect } from 'react-redux';
+import {connect} from 'react-redux';
 import {HeaderBar} from './../components/HeaderBar';
 import 'font-awesome/css/font-awesome.min.css';
 import './CustomerTableStyle.css';
 import swal from 'sweetalert';
 
-import { updateTableStatus } from './../brains/tables';
-import { closeCustomerTable,
-          sendNewOrderToServer,
-          cancelOrder,
-          checkBill,
-          getCurrentOrder,
-          getTableDiscount,
-          submitTableDiscount
-        } from './../brains/customerTable';
-import { getAllFoodItems } from './../brains/foodItems';
+import {updateTableStatus} from './../brains/tables';
+import {
+  closeCustomerTable,
+  sendNewOrderToServer,
+  cancelOrder,
+  checkBill,
+  getCurrentOrder,
+  getTableDiscount,
+  submitTableDiscount,
+  getTableLogs,
+  getCustomerTableInfo,
+  getCustomerTablePayment,
+  completePayment
+} from './../brains/customerTable';
+import {getAllFoodItems} from './../brains/foodItems';
 
-import { getFoodItemsByCategory } from './../Redux/selectors/foodItems';
-import { loadAllFoodItems, setSelectedFoodItems } from './../Redux/actions/foodItems';
-import { setCurrentOrders } from './../Redux/actions/customerTable';
+import {getFoodItemsByCategory} from './../Redux/selectors/foodItems';
+import {
+  loadAllFoodItems,
+  setSelectedFoodItems
+} from './../Redux/actions/foodItems';
+import {
+  setCurrentOrders,
+  setTableLogs,
+  updateSelectedTableStatus
+} from './../Redux/actions/customerTable';
 
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheckCircle, faFireAlt, faTimesCircle,
-   faEdit, faFileInvoiceDollar, faTrashAlt, faPercentage } from '@fortawesome/free-solid-svg-icons';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {
+  faCheckCircle,
+  faFireAlt,
+  faTimesCircle,
+  faEdit,
+  faFileInvoiceDollar,
+  faTrashAlt,
+  faPercentage
+} from '@fortawesome/free-solid-svg-icons';
+
+import { formatNumber } from './../helpers/utilities';
+
 
 var moment = require('moment');
 
-
 class CustomerTable extends React.Component {
 
-  constructor(props){
+  constructor(props) {
+    console.log(props.customerTable);
     super(props);
-    getAllFoodItems((foodItems) => {
+    getAllFoodItems(foodItems => {
       props.dispatch(loadAllFoodItems(foodItems));
-      props.dispatch(setSelectedFoodItems(
-        getFoodItemsByCategory(this.props.foodItems.allFoodItems, this.props.foodItems.allFoodItems[0].category)));
+      props.dispatch(
+        setSelectedFoodItems(
+          getFoodItemsByCategory(
+            this.props.foodItems.allFoodItems,
+            this.props.foodItems.allFoodItems[0].category
+          )
+        )
+      );
     });
     this.state = {
       newOrderItems: [],
@@ -50,359 +78,492 @@ class CustomerTable extends React.Component {
         show: false,
         payload: {}
       },
+      payment: {
+        show: false,
+        payload: {}
+      },
       codeInput: '',
       searchInput: '',
       filterItems: [],
       showLogs: false
-    }
+    };
   }
 
-    existButtonHandler = () => {
-      updateTableStatus(this.props.customerTable.table_number, 'available' , '');
-      this.props.history.push('/tables');
-    }
-    closeCustomerTableHandler = () => {
-      updateTableStatus(this.props.customerTable.table_number, 'available' , '');
-      closeCustomerTable(this.props.customerTable.id);
-      this.props.history.push('/tables');
-    }
-    categoryButtonHandler = (category) => {
-      this.setState({
-        searchInput: ''
-      })
-      this.props.dispatch(setSelectedFoodItems(getFoodItemsByCategory(this.props.foodItems.allFoodItems, category)));
-    }
-    addNewItem = (payload) => {
-      var currentItems = this.state.newOrderItems;
-      var isExisted = false;
-      currentItems.forEach(item => {
-        if(payload.code === item.code){
-          isExisted = true;
-          item.quantity += payload.quantity;
-          item.remark = payload.remark || item.remark
-        }
-      });
-      if(!isExisted){
-        currentItems.push(payload);
-      }
-      this.setState(() => ({
-        newOrderItems: currentItems
-      }))
-    }
-    newOrderItemsEdit = (order) => {
-      this.setState({
-        editNewItem: {
-          show: true,
-          payload: order
-        }
-      })
-    }
-    onEditClickClose = () => {
-      this.setState({
-        editNewItem: {
-          show: false,
-          payload: {}
-        }
-      })
-    }
-    onEditClickDelete = (code) => {
-      var currentItems = this.state.newOrderItems.filter((item) => (item.code !== code));
-      this.setState({
-        editNewItem: {
-            show: false,
-            payload: {}
-          },
-        newOrderItems: currentItems
-      })
-    }
-    onEditClickSave = ({ code, quantity, remark }) => {
-      var currentItems = this.state.newOrderItems;
-      currentItems.forEach(item => {
-        if(code === item.code){
-          item.quantity= quantity;
-          item.remark = remark;
-        }
-      });
-      this.setState(({
-        editNewItem: {
-            show: false,
-            payload: {}
-          },
-        newOrderItems: currentItems
-      }));
-    }
-    codeInputHandler = (e) => {
-      this.setState({
-        codeInput: e.target.value
-      })
-    }
-    codeInputSubmit = (e) => {
-      e.preventDefault();
-      if(this.state.codeInput.trim() !== ''){
-        const input = this.state.codeInput;
-        const splitRemark = input.split('/');
-        var errorQuantity = false;
-        var remark;
-        var quantity;
-        if(splitRemark.length === 2){
-          remark = splitRemark[1];
-        }
-        const splitQuantity = splitRemark[0].split('*');
-        if(splitQuantity.length === 2){
-          parseInt(splitQuantity[1]);
-          quantity = parseInt(splitQuantity[1]);
-          errorQuantity = isNaN(quantity);
-        }
-
-        var code = parseInt(splitQuantity[0]);
-        var setItem;
-        this.props.foodItems.allFoodItems.forEach((category) => {
-          category.sub_category.forEach(sub_category => {
-            sub_category.items.forEach(item => {
-              if(item.code === code){
-                setItem = item;
-              }
-            })
-          })
-        })
-        if(setItem !== undefined && !errorQuantity){
-          if(quantity !== undefined){
-            const data = {
-              code: code,
-              name: setItem.name,
-              quantity: quantity,
-              remark: remark,
-              price: setItem.price
-            }
-            this.addNewItem(data);
-            this.setState({
-              codeInput: ''
-            });
-          }else{
-            const data = {
-              code: code,
-              name: setItem.name,
-              quantity: 1,
-              remark: remark,
-              price: setItem.price
-            }
-            this.addNewItem(data);
-            this.setState({
-              codeInput: ''
-            });
-          }
-        }else{
-          if(setItem === undefined){
-            swal("เกิดข้อผิดพลาด", "ไม่พบรายการอาหาร", "error");
-            this.setState({
-              codeInput: ''
-            });
-          }else{
-            swal("เกิดข้อผิดพลาด", "จำนวนอาหารไม่ถูกต้อง", "error");
-            this.setState({
-              codeInput: ''
-            });
-          }
-        }
-      }
-    }
-    sendNewItemsHandler = () => {
-      if(this.state.newOrderItems.length !== 0){
-        const userId = this.props.user.id;
-        const tableId = this.props.customerTable.id;
-        const items = this.state.newOrderItems;
-        if(!tableId || !userId){
-          swal('เกิดข้อผิดพลาด','ไม่สามารถระบุไอดีของโต๊ะหรือผู้ใช้งานได้','warning');
-        }else{
-          sendNewOrderToServer({
-            userId, tableId, items
-          });
-          swal('เสร็จสิ้น','รายการถูกบันทึก','success').then(() => {
-            this.existButtonHandler();
-          });
-        }
-      }else{
-        swal('เกิดข้อผิดพลาด','ไม่พบรายการอาหารใหม่','warning');
-      }
-    }
-    seachBoxChangeHandler = (e) => {
-      if(e.target.value.length === 1){
-        this.setState({
-          searchInput: e.target.value.trim()
+  refreshTableInfo = () => {
+    getCustomerTableInfo(this.props.customerTable.id, (data) => {
+      this.props.dispatch(updateSelectedTableStatus(data.status));
+      getCurrentOrder(this.props.customerTable.id, response => {
+        this.props.dispatch(setCurrentOrders(response));
+        getTableLogs(this.props.customerTable.id, logs => {
+          this.props.dispatch(setTableLogs(logs));
         });
-      }else{
-        this.setState({
-          searchInput: e.target.value
-        })
+      });
+    });
+  }
+
+  existButtonHandler = () => {
+    updateTableStatus(this.props.customerTable.table_number, 'available', '');
+    this.props.history.push('/tables');
+  };
+  closeCustomerTableHandler = () => {
+    updateTableStatus(this.props.customerTable.table_number, 'available', '');
+    closeCustomerTable(this.props.customerTable.id);
+    this.props.history.push('/tables');
+  };
+  categoryButtonHandler = category => {
+    this.setState({
+      searchInput: ''
+    });
+    this.props.dispatch(
+      setSelectedFoodItems(
+        getFoodItemsByCategory(this.props.foodItems.allFoodItems, category)
+      )
+    );
+  };
+  addNewItem = payload => {
+    var currentItems = this.state.newOrderItems;
+    var isExisted = false;
+    currentItems.forEach(item => {
+      if (payload.code === item.code) {
+        isExisted = true;
+        item.quantity += payload.quantity;
+        item.remark = payload.remark || item.remark;
+      }
+    });
+    if (!isExisted) {
+      currentItems.push(payload);
+    }
+    this.setState(() => ({
+      newOrderItems: currentItems
+    }));
+  };
+  newOrderItemsEdit = order => {
+    this.setState({
+      editNewItem: {
+        show: true,
+        payload: order
+      }
+    });
+  };
+  onEditClickClose = () => {
+    this.setState({
+      editNewItem: {
+        show: false,
+        payload: {}
+      }
+    });
+  };
+  onEditClickDelete = code => {
+    var currentItems = this.state.newOrderItems.filter(
+      item => item.code !== code
+    );
+    this.setState({
+      editNewItem: {
+        show: false,
+        payload: {}
+      },
+      newOrderItems: currentItems
+    });
+  };
+  onEditClickSave = ({code, quantity, remark}) => {
+    var currentItems = this.state.newOrderItems;
+    currentItems.forEach(item => {
+      if (code === item.code) {
+        item.quantity = quantity;
+        item.remark = remark;
+      }
+    });
+    this.setState({
+      editNewItem: {
+        show: false,
+        payload: {}
+      },
+      newOrderItems: currentItems
+    });
+  };
+  codeInputHandler = e => {
+    this.setState({
+      codeInput: e.target.value
+    });
+  };
+  codeInputSubmit = e => {
+    e.preventDefault();
+    if (this.state.codeInput.trim() !== '') {
+      const input = this.state.codeInput;
+      const splitRemark = input.split('/');
+      var errorQuantity = false;
+      var remark;
+      var quantity;
+      if (splitRemark.length === 2) {
+        remark = splitRemark[1];
+      }
+      const splitQuantity = splitRemark[0].split('*');
+      if (splitQuantity.length === 2) {
+        parseInt(splitQuantity[1]);
+        quantity = parseInt(splitQuantity[1]);
+        errorQuantity = isNaN(quantity);
       }
 
-      var filterItems = [];
-      this.props.foodItems.allFoodItems.forEach((category) => {
+      var code = parseInt(splitQuantity[0]);
+      var setItem;
+      this.props.foodItems.allFoodItems.forEach(category => {
         category.sub_category.forEach(sub_category => {
           sub_category.items.forEach(item => {
-            if(item.name.toLowerCase().includes(e.target.value) || item.code.toString().includes(e.target.value)){
-              filterItems.push(item);
+            if (item.code === code) {
+              setItem = item;
             }
-          })
-        })
-      })
-      this.setState({
-        filterItems: filterItems
-      })
-    }
-    deleteOrderItem = (payload) => {
-      this.setState({
-        deleteOrderItem: {
-          show: true,
-          payload
+          });
+        });
+      });
+      if (setItem !== undefined && !errorQuantity) {
+        if (quantity !== undefined) {
+          const data = {
+            code: code,
+            name: setItem.name,
+            quantity: quantity,
+            remark: remark,
+            price: setItem.price
+          };
+          this.addNewItem(data);
+          this.setState({
+            codeInput: ''
+          });
+        } else {
+          const data = {
+            code: code,
+            name: setItem.name,
+            quantity: 1,
+            remark: remark,
+            price: setItem.price
+          };
+          this.addNewItem(data);
+          this.setState({
+            codeInput: ''
+          });
         }
-      })
-    }
-    deleteOrderItemClose = () => {
-      this.setState({
-        deleteOrderItem: {
-          show: false,
-          payload: {}
+      } else {
+        if (setItem === undefined) {
+          swal('เกิดข้อผิดพลาด', 'ไม่พบรายการอาหาร', 'error');
+          this.setState({
+            codeInput: ''
+          });
+        } else {
+          swal('เกิดข้อผิดพลาด', 'จำนวนอาหารไม่ถูกต้อง', 'error');
+          this.setState({
+            codeInput: ''
+          });
         }
-      })
+      }
     }
-    deleteOrderItemSubmit = (payload) => {
+  };
+  sendNewItemsHandler = () => {
+    if (this.state.newOrderItems.length !== 0) {
+      const userId = this.props.user.id;
+      const tableId = this.props.customerTable.id;
+      const items = this.state.newOrderItems;
+      if (!tableId || !userId) {
+        swal(
+          'เกิดข้อผิดพลาด',
+          'ไม่สามารถระบุไอดีของโต๊ะหรือผู้ใช้งานได้',
+          'warning'
+        );
+      } else {
+        sendNewOrderToServer({
+          userId,
+          tableId,
+          items
+        });
+        swal('เสร็จสิ้น', 'รายการถูกบันทึก', 'success').then(() => {
+          this.existButtonHandler();
+        });
+      }
+    } else {
+      swal('เกิดข้อผิดพลาด', 'ไม่พบรายการอาหารใหม่', 'warning');
+    }
+  };
+  seachBoxChangeHandler = e => {
+    if (e.target.value.length === 1) {
       this.setState({
-        deleteOrderItem: {
-          show: false,
-          payload: {}
-        }
-      })
-      cancelOrder({
+        searchInput: e.target.value.trim()
+      });
+    } else {
+      this.setState({
+        searchInput: e.target.value
+      });
+    }
+
+    var filterItems = [];
+    this.props.foodItems.allFoodItems.forEach(category => {
+      category.sub_category.forEach(sub_category => {
+        sub_category.items.forEach(item => {
+          if (
+            item.name.toLowerCase().includes(e.target.value) ||
+            item.code.toString().includes(e.target.value)
+          ) {
+            filterItems.push(item);
+          }
+        });
+      });
+    });
+    this.setState({
+      filterItems: filterItems
+    });
+  };
+  deleteOrderItem = payload => {
+    this.setState({
+      deleteOrderItem: {
+        show: true,
+        payload
+      }
+    });
+  };
+  deleteOrderItemClose = () => {
+    this.setState({
+      deleteOrderItem: {
+        show: false,
+        payload: {}
+      }
+    });
+  };
+  deleteOrderItemSubmit = payload => {
+    this.setState({
+      deleteOrderItem: {
+        show: false,
+        payload: {}
+      }
+    });
+    cancelOrder(
+      {
         order_id: payload.id,
         quantity: payload.quantity,
         remark: payload.remark,
-        create_by: this.props.user.id}, () => {
-          getCurrentOrder(this.props.customerTable.id, (response) => {
-            this.props.dispatch(setCurrentOrders(response));
-            swal("สำเร็จ", "รายการถูกยกเลิกแล้ว", "success");
-          })
-
+        create_by: this.props.user.id
+      },
+      () => {
+        getCurrentOrder(this.props.customerTable.id, response => {
+          this.props.dispatch(setCurrentOrders(response));
+          swal('สำเร็จ', 'รายการถูกยกเลิกแล้ว', 'success').then(() => {
+            this.refreshTableInfo();
+          });
         });
-    }
-    checkBill = () => {
-      checkBill({
+      }
+    );
+  };
+  checkBill = () => {
+    checkBill(
+      {
         customer_table_id: this.props.customerTable.id,
         user_id: this.props.user.id
-      }, () => {
-        swal('เสร็จสิ้น','รายการถูกบันทึก','success').then(() => {
+      },
+      () => {
+        swal('เสร็จสิ้น', 'รายการถูกบันทึก', 'success').then(() => {
           this.existButtonHandler();
         });
-      })
-    }
-    toggleShowLogs = () => {
-      this.setState({
-        showLogs : !this.state.showLogs
-      })
-    }
-    discountHandler = () => {
-      getTableDiscount(this.props.customerTable.id, (payload) => {
-        this.setState({
-          discount: {
-            show: true,
-            payload
-          }
-        })
-      });
-    }
-    onDiscountSubmit = (payload) => {
-      submitTableDiscount(this.props.customerTable.id, this.props.user.id, payload, () => {
-        swal('เสร็จสิ้น','รายการถูกบันทึก','success').then(() => {
-          this.setState({
-            discount: {
-              show:false
-            }
-          });
-        })
-      })
-    }
-    onDiscountClose = () => {
+      }
+    );
+  };
+  toggleShowLogs = () => {
+    this.setState({
+      showLogs: !this.state.showLogs
+    });
+  };
+  discountHandler = () => {
+    getTableDiscount(this.props.customerTable.id, payload => {
       this.setState({
         discount: {
-          show:false
+          show: true,
+          payload
+        }
+      });
+    });
+  };
+  onDiscountSubmit = payload => {
+    submitTableDiscount(
+      this.props.customerTable.id,
+      this.props.user.id,
+      payload,
+      () => {
+        swal('เสร็จสิ้น', 'รายการถูกบันทึก', 'success').then(() => {
+          this.refreshTableInfo();
+          this.setState({
+            discount: {
+              show: false
+            }
+          });
+        });
+      }
+    );
+  };
+  onDiscountClose = () => {
+    this.setState({
+      discount: {
+        show: false
+      }
+    });
+  };
+  paymentHandler = () => {
+    getCustomerTablePayment(this.props.customerTable.id, (payment) => {
+      this.setState({
+        payment: {
+          show: true,
+          payload: payment
         }
       })
-    }
-    render(){
-      return(
-        <div className="container">
-          {this.state.discount.show && <DiscountOption
+    });
+  }
+  paymentCloseHandler = () => {
+    this.setState({
+      payment: {
+        show:false
+      }
+    })
+  }
+  paymentSubmit = (payload) => {
+  const {  payable,
+    totalAmount,
+    paymentType,
+    changeAmount} = payload;
+
+    completePayment({
+      total_amount : payable,
+      receive_amount: totalAmount,
+      method: paymentType,
+      table_id: this.props.customerTable.id,
+      user_id: this.props.user.id
+    }, () => {
+      setTimeout(() => {
+        this.existButtonHandler()
+      }, 3000);
+    })
+  }
+  render() {
+    return (
+      <div className="container">
+        {this.state.discount.show && (
+          <DiscountOption
             onClose={this.onDiscountClose}
             onSubmit={this.onDiscountSubmit}
             info={this.state.discount.payload}
-          />}
-          {this.state.editNewItem.show && <EditNewMenuItem
+          />
+        )}
+        {this.state.payment.show && (
+          <Payment
+            payload={this.state.payment.payload}
+            onClose={this.paymentCloseHandler}
+            paymentSubmit={this.paymentSubmit}
+          />
+        )}
+        {this.state.editNewItem.show && (
+          <EditNewMenuItem
             onClickClose={this.onEditClickClose}
             onClickDelete={this.onEditClickDelete}
             onClickSave={this.onEditClickSave}
-            payload={this.state.editNewItem.payload} />}
+            payload={this.state.editNewItem.payload}
+          />
+        )}
 
-            {this.state.deleteOrderItem.show && <DeleteOrderItemOption
-              onClickClose={this.deleteOrderItemClose}
-              onClickDelete={this.deleteOrderItemSubmit}
-              payload={this.state.deleteOrderItem.payload} />}
-          {this.props.customerTable.currentOrders &&
-            this.props.customerTable.currentOrders.length === 0
-            ? <HeaderBar name={this.props.user.name} info={this.props.customerTable} buttonFunction={() => {this.closeCustomerTableHandler()}} buttonLabel="ปิดโต๊ะ"/>
-            : <HeaderBar name={this.props.user.name} info={this.props.customerTable} buttonFunction={() => {this.existButtonHandler()}} buttonLabel="กลับ"/>}
+        {this.state.deleteOrderItem.show && (
+          <DeleteOrderItemOption
+            onClickClose={this.deleteOrderItemClose}
+            onClickDelete={this.deleteOrderItemSubmit}
+            payload={this.state.deleteOrderItem.payload}
+          />
+        )}
+        {this.props.customerTable.currentOrders &&
+        this.props.customerTable.currentOrders.length === 0 ? (
+          <HeaderBar
+            name={this.props.user.name}
+            info={this.props.customerTable}
+            buttonFunction={() => {
+              this.closeCustomerTableHandler();
+            }}
+            buttonLabel="ปิดโต๊ะ"
+          />
+        ) : (
+          <HeaderBar
+            name={this.props.user.name}
+            info={this.props.customerTable}
+            buttonFunction={() => {
+              this.existButtonHandler();
+            }}
+            buttonLabel="กลับ"
+          />
+        )}
 
-          <div className="row mt-3">
-            <div className="col-sm-2" style={menuSectionStyle}>
-              {
-                this.props.foodItems.allFoodItems.map(cat => (
-                  <div className="row my-3">
-                    <div className="col-sm-12">
-                      {this.props.foodItems.selectedFoodItems.category === cat.category && this.state.searchInput === '' ? (
-                        <button className="btn btn-info btn-lg btn-block" onClick={() => this.categoryButtonHandler(cat.category)}>
-                          {cat.category}
-                        </button>
-                      ) : (
-                        <button className="btn btn-success btn-lg btn-block" onClick={() => this.categoryButtonHandler(cat.category)}>
-                          {cat.category}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))
-              }
-            </div>
-            <div className="col-sm-5">
-              <div className="row" >
-                <div className="col-sm-12" style={menuItemStyle}>
-                { this.state.searchInput === '' &&
-                  this.props.foodItems.selectedFoodItems.sub_category
-                  && this.props.foodItems.selectedFoodItems.sub_category.map(sub_cat => {
-                  if(sub_cat.items.length !== 0) {
-                    return (<div>
-                      <div className="row mx-auto">
-                        {sub_cat.sub_category}
-                      </div>
-                      <div className="row mx-auto">
-                        {sub_cat.items.map(item => (
-                          <MenuItemBox label={item.name} price={item.price} code={item.code} onClick={this.addNewItem}/>
-                        ))}
-                      </div>
-                    </div>)
-                  }
-                })}
-                {
-                  this.state.searchInput !== '' &&
-                  <div className="row mx-auto">
-                    {this.state.filterItems.map(item => <MenuItemBox label={item.name} price={item.price} code={item.code} onClick={this.addNewItem}/>)}
-                  </div>
-                }
+        <div className="row mt-3">
+          <div className="col-sm-2" style={menuSectionStyle}>
+            {this.props.foodItems.allFoodItems.map(cat => (
+              <div className="row my-3">
+                <div className="col-sm-12">
+                  {this.props.foodItems.selectedFoodItems.category ===
+                    cat.category && this.state.searchInput === '' ? (
+                    <button
+                      className="btn btn-info btn-lg btn-block"
+                      onClick={() => this.categoryButtonHandler(cat.category)}
+                    >
+                      {cat.category}
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-success btn-lg btn-block"
+                      onClick={() => this.categoryButtonHandler(cat.category)}
+                    >
+                      {cat.category}
+                    </button>
+                  )}
                 </div>
               </div>
-              <div className="row">
-                <div className="col-sm-12" style={seachBoxStyle}>
-                  <div className="input-group mb-3 mt-3">
+            ))}
+          </div>
+          <div className="col-sm-5">
+            <div className="row">
+              <div className="col-sm-12" style={menuItemStyle}>
+                {this.state.searchInput === '' &&
+                  this.props.foodItems.selectedFoodItems.sub_category &&
+                  this.props.foodItems.selectedFoodItems.sub_category.map(
+                    sub_cat => {
+                      if (sub_cat.items.length !== 0) {
+                        return (
+                          <div>
+                            <div className="row mx-auto">
+                              {sub_cat.sub_category}
+                            </div>
+                            <div className="row mx-auto">
+                              {sub_cat.items.map(item => (
+                                <MenuItemBox
+                                  label={item.name}
+                                  price={item.price}
+                                  code={item.code}
+                                  onClick={this.addNewItem}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+                    }
+                  )}
+                {this.state.searchInput !== '' && (
+                  <div className="row mx-auto">
+                    {this.state.filterItems.map(item => (
+                      <MenuItemBox
+                        label={item.name}
+                        price={item.price}
+                        code={item.code}
+                        onClick={this.addNewItem}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-sm-12" style={seachBoxStyle}>
+                <div className="input-group mb-3 mt-3">
                   <div className="input-group-prepend">
-                    <span className="input-group-text" id="basic-addon1">ค้นหา</span>
+                    <span className="input-group-text" id="basic-addon1">
+                      ค้นหา
+                    </span>
                   </div>
                   <input
                     onChange={this.seachBoxChangeHandler}
@@ -412,296 +573,522 @@ class CustomerTable extends React.Component {
                     value={this.state.searchInput}
                   />
                 </div>
-                </div>
               </div>
-            </div>
-            <div className="col-sm-5" style={orderListDivStyle}>
-              <div className="col-sm-12" style={orderListPageStyle}>
-                <div className="row" style={orderListTitleStyle}>
-                  <div className="col-sm-5">
-                  </div>
-                  <div className="col-sm-2">
-                    <h4 style={{margin: 'auto'}}>{!this.state.showLogs ? 'รายการ' : 'Logs'}</h4>
-                  </div>
-                  <div className="col-sm-1">
-                  </div>
-                  <div className="col-sm-4">
-                    <button
-                      onClick={() => this.toggleShowLogs()}
-                      className="btn btn-link pull-right">ดู {this.state.showLogs ? 'รายการ' : 'Logs'}</button>
-                  </div>
-                </div>
-                { !this.state.showLogs ?
-                <div>
-                <table width="100%">
-                  <thead>
-                    <tr>
-                      <th style={{textAlign:'center'}} width="10%">จำนวน</th>
-                      <th width="10%">สถานะ</th>
-                      <th width="60%">รายการ</th>
-                      <th width="20%">ราคา</th>
-                    </tr>
-                  </thead>
-                </table>
-                <div className="row" style={{margin: '5px 0', width: '100%', height:'440px', overflow: 'scroll'}}>
-                  <table width="100%">
-                  {this.props.customerTable.currentOrders && this.props.customerTable.currentOrders.map((order, index) => (
-
-                    <tbody>
-                    <tr>
-                      <td width="10%" style={{textAlign:'center'}}>{order.quantity}</td>
-                      <td width="10%" style={{textAlign:'center'}}>{order.status === 'sent' ?
-                        <FontAwesomeIcon title={`ออเดอร์สถานะ: กำลังทำ | ส่งข้อมูลโดย: ${order.status_updateBy} | เวลา: ${moment(order.status_updateAt).format('hh:mm A')}`} icon={faFireAlt} color='orange' />
-                      : order.status === 'complete' ?
-                      <FontAwesomeIcon title={`ออเดอร์สถานะ: เสร็จ | อับเดตโดย: ${order.status_updateBy} | เวลา: ${moment(order.status_updateAt).format('hh:mm A')}`} icon={faCheckCircle} color='green' />
-                      : <FontAwesomeIcon title={`ออเดอร์สถานะ: ยกเลิก | อับเดตโดย: ${order.status_updateBy} | เวลา: ${moment(order.status_updateAt).format('hh:mm A')}`} icon={faTimesCircle} color='red' />
-                    }
-                    </td>
-                      <td className='orderItem' width="60%" title={`รับโดย: ${order.createBy} | เวลา: ${moment(order.createAt).format('hh:mm A')}`}>
-                        {order.name}&nbsp;&nbsp;{order.status !== 'cancel' &&
-                        <span onClick={() => this.deleteOrderItem({name: order.name, id: order.id, quantity: order.quantity})} title="ยกเลิก" className="newOrderItemsEdit deleteOrderIcon"><FontAwesomeIcon icon={faTrashAlt} color='red' /></span>
-                      }
-                      </td>
-                      <td width="20%">{order.price * order.quantity}.-</td>
-                    </tr>
-                    </tbody>
-                  ))}
-                  {
-                    this.state.newOrderItems.map((order, index) => (
-                      <tbody>
-                        <tr className='newOrderItems'>
-                          <td style={{textAlign:'center'}} width="10%" className="quantity">{order.quantity}</td>
-                          <td width="10%" style={{textAlign:'center'}}></td>
-                          <td width="60%">
-                            {order.name}&nbsp;&nbsp;
-                            <span onClick={() => this.newOrderItemsEdit(order)} className="newOrderItemsEdit"><FontAwesomeIcon icon={faEdit} color='blue' /></span>
-                          </td>
-                          <td width="20%">{order.price * order.quantity}.-</td>
-                        </tr>
-                        {order.remark &&
-                          <tr>
-                            <td width="10%"></td>
-                            <td width="10%"></td>
-                            <td style={{color:'grey'}}>** {order.remark}</td>
-                          </tr>}
-                      </tbody>
-                    ))
-                  }
-                  </table>
-                </div>
-              </div>
-              :
-              <div>
-                <table width="100%">
-                  <thead>
-                    <tr>
-                      <th width="15%">ส่งโดย</th>
-                      <th width="10%">เวลา</th>
-                      <th width="77%">รายละเอียด</th>
-
-                    </tr>
-                  </thead>
-                </table>
-                <div className="row" style={{margin: '5px 0', width: '100%', height:'440px', overflow: 'scroll'}}>
-                  <table width="100%">
-                    {this.props.customerTable.logs.map(log => (
-                      <tbody>
-                        <tr>
-                          <td valign="top" width="15%">{log.short_name}</td>
-                          <td valign="top" width="10%">{moment(log.timestamp).format('hh:mm')}</td>
-                          {
-                            (() => {
-                              switch (log.status) {
-                                case 'sent':
-                                  return <td valid="top" width="75%">สั่งอาหาร:<b>{log.name}</b> | จำนวน:<b>{log.quantity}</b> {log.detail !== null ? `หมายเหตุ:${log.detail}`: ``}</td>;
-                                  break;
-                                case 'cancel':
-                                  return  <td valid="top" width="75%">ยกเลิกอาหาร:<b>{log.name}</b> | จำนวน:<b>{log.quantity}</b> {log.detail !== null ? `หมายเหตุ:${log.detail}`: ``}</td>;
-                                  break;
-                                case 'complete':
-                                  return  <td valid="top" width="75%">พร้อมเสริฟอาหาร:<b>{log.name}</b>| จำนวน:<b>{log.quantity}</b></td>;
-                                  break;
-                                case 'opened':
-                                  return <td valid="top" width="75%">เปิดโต๊ะ</td>;
-                                break;
-                                case 'checked':
-                                return <td valid="top" width="75%">เรียกเช็คบิล</td>;
-                                break;
-                                case 'discount':
-                                return <td valid="top" width="75%">ใส่ส่วนลดเป็น: {log.detail}</td>;
-                                default: return <td valid="top" width="75%"></td>
-                              }
-                            })()
-                          }
-                        </tr>
-                      </tbody>
-                    ))}
-                  </table>
-                </div>
-              </div>
-            }
-                <h4 style={{textAlign:'right'}}>รวม {
-                  this.props.customerTable.currentOrders
-                  && this.props.customerTable.currentOrders.reduce(
-                    (sum,order) => (sum + (order.price * order.quantity))
-                    ,0)
-                  }.-</h4>
-              </div>
-
-              <div className="row mx-auto" >
-                <div className="col-sm-2"><button className="btn btn-info"><span style={{fontSize:'25px'}}><i className="fa fa-exchange"></i></span></button></div>
-                <div className="col-sm-2"><button onClick={() => this.discountHandler()} title='ลดราคา' className="btn btn-info"><span style={{fontSize:'25px'}}><FontAwesomeIcon icon={faPercentage} color='white' /></span></button></div>
-                <div className="col-sm-2">{
-                  this.props.customerTable.currentOrders && this.props.customerTable.currentOrders.length !== 0 ?
-                  <button onClick={() => this.checkBill()} title='เช็คบิล' className="btn btn-info px-3"><span style={{fontSize:'25px'}}><FontAwesomeIcon icon={faFileInvoiceDollar} color='white' /></span></button>
-                  :<button title='เช็คบิล' className="btn btn-secondary px-3" disabled><span style={{fontSize:'25px'}}><FontAwesomeIcon icon={faFileInvoiceDollar} color='white' /></span></button>
-                }</div>
-                <div className="col-sm-2">{
-                  this.props.customerTable.status === 'checked' ?
-                  <button title='รับเงิน' className="btn btn-info"><span style={{fontSize:'25px'}}><i className="fa fa-money"></i></span></button>
-                  : <button title='รับเงิน' className="btn btn-secondary" disabled><span style={{fontSize:'25px'}}><i className="fa fa-money"></i></span></button>
-                }</div>
-
-                <div className="col-sm-2">{
-                  this.state.newOrderItems.length !== 0 ?
-                  <button title='ส่งรายการ' className="btn btn-info" onClick={() => this.sendNewItemsHandler()}><span style={{fontSize:'25px'}}><i className="fa fa-send"></i></span></button>
-                  : <button title='ส่งรายการ' className="btn btn-secondary" disabled><span style={{fontSize:'25px'}}><i className="fa fa-send"></i></span></button>
-                }</div>
-              </div>
-              <form onSubmit={this.codeInputSubmit}>
-                <div className="row" style={{margin:'10px 0 0 0'}}>
-                  <div className="input-group" style={{margin:'18px 0 0 0'}}>
-                    <div className="input-group-prepend">
-                      <span className="input-group-text" id="basic-addon1">Code: </span>
-                    </div>
-                    <input
-                      autoFocus
-                      type="text"
-                      className="form-control"
-                      placeholder="รหัส*จำนวน#หมายเหตุ"
-                      onChange={this.codeInputHandler}
-                      value={this.state.codeInput}
-                     />
-                      <div className="input-group-append">
-                      <button className="btn btn-success" type="submit">เพิ่ม</button>
-                    </div>
-                  </div>
-                </div>
-              </form>
             </div>
           </div>
+          <div className="col-sm-5" style={orderListDivStyle}>
+            <div className="col-sm-12" style={orderListPageStyle}>
+              <div className="row" style={orderListTitleStyle}>
+                <div className="col-sm-5" />
+                <div className="col-sm-2">
+                  <h4 style={{margin: 'auto'}}>
+                    {!this.state.showLogs ? 'รายการ' : 'Logs'}
+                  </h4>
+                </div>
+                <div className="col-sm-1" />
+                <div className="col-sm-4">
+                  <button
+                    onClick={() => this.toggleShowLogs()}
+                    className="btn btn-link pull-right"
+                  >
+                    ดู {this.state.showLogs ? 'รายการ' : 'Logs'}
+                  </button>
+                </div>
+              </div>
+              {!this.state.showLogs ? (
+                <div>
+                  <table width="100%">
+                    <thead>
+                      <tr>
+                        <th style={{textAlign: 'center'}} width="10%">
+                          จำนวน
+                        </th>
+                        <th width="10%">สถานะ</th>
+                        <th width="60%">รายการ</th>
+                        <th width="20%">ราคา</th>
+                      </tr>
+                    </thead>
+                  </table>
+                  <div
+                    className="row"
+                    style={{
+                      margin: '5px 0',
+                      width: '100%',
+                      height: '440px',
+                      overflow: 'scroll'
+                    }}
+                  >
+                    <table width="100%">
+                      {this.props.customerTable.currentOrders &&
+                        this.props.customerTable.currentOrders.map(
+                          (order, index) => (
+                            <tbody>
+                              <tr>
+                                <td width="10%" style={{textAlign: 'center'}}>
+                                  {order.quantity}
+                                </td>
+                                <td width="10%" style={{textAlign: 'center'}}>
+                                  {order.status === 'sent' ? (
+                                    <FontAwesomeIcon
+                                      title={`ออเดอร์สถานะ: กำลังทำ | ส่งข้อมูลโดย: ${
+                                        order.status_updateBy
+                                      } | เวลา: ${moment(
+                                        order.status_updateAt
+                                      ).format('hh:mm A')}`}
+                                      icon={faFireAlt}
+                                      color="orange"
+                                    />
+                                  ) : order.status === 'complete' ? (
+                                    <FontAwesomeIcon
+                                      title={`ออเดอร์สถานะ: เสร็จ | อับเดตโดย: ${
+                                        order.status_updateBy
+                                      } | เวลา: ${moment(
+                                        order.status_updateAt
+                                      ).format('hh:mm A')}`}
+                                      icon={faCheckCircle}
+                                      color="green"
+                                    />
+                                  ) : (
+                                    <FontAwesomeIcon
+                                      title={`ออเดอร์สถานะ: ยกเลิก | อับเดตโดย: ${
+                                        order.status_updateBy
+                                      } | เวลา: ${moment(
+                                        order.status_updateAt
+                                      ).format('hh:mm A')}`}
+                                      icon={faTimesCircle}
+                                      color="red"
+                                    />
+                                  )}
+                                </td>
+                                <td
+                                  className="orderItem"
+                                  width="60%"
+                                  title={`รับโดย: ${
+                                    order.createBy
+                                  } | เวลา: ${moment(order.createAt).format(
+                                    'hh:mm A'
+                                  )}`}
+                                >
+                                  {order.name}&nbsp;&nbsp;{order.status !==
+                                    'cancel' && (
+                                    <span
+                                      onClick={() =>
+                                        this.deleteOrderItem({
+                                          name: order.name,
+                                          id: order.id,
+                                          quantity: order.quantity
+                                        })
+                                      }
+                                      title="ยกเลิก"
+                                      className="newOrderItemsEdit deleteOrderIcon"
+                                    >
+                                      <FontAwesomeIcon
+                                        icon={faTrashAlt}
+                                        color="red"
+                                      />
+                                    </span>
+                                  )}
+                                </td>
+                                <td width="20%">
+                                  {formatNumber(order.price * order.quantity)}.-
+                                </td>
+                              </tr>
+                            </tbody>
+                          )
+                        )}
+                      {this.state.newOrderItems.map((order, index) => (
+                        <tbody>
+                          <tr className="newOrderItems">
+                            <td
+                              style={{textAlign: 'center'}}
+                              width="10%"
+                              className="quantity"
+                            >
+                              {order.quantity}
+                            </td>
+                            <td width="10%" style={{textAlign: 'center'}} />
+                            <td width="60%">
+                              {order.name}&nbsp;&nbsp;
+                              <span
+                                onClick={() => this.newOrderItemsEdit(order)}
+                                className="newOrderItemsEdit"
+                              >
+                                <FontAwesomeIcon icon={faEdit} color="blue" />
+                              </span>
+                            </td>
+                            <td width="20%">
+                              {formatNumber(order.price * order.quantity)}.-
+                            </td>
+                          </tr>
+                          {order.remark && (
+                            <tr>
+                              <td width="10%" />
+                              <td width="10%" />
+                              <td style={{color: 'grey'}}>** {order.remark}</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      ))}
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <table width="100%">
+                    <thead>
+                      <tr>
+                        <th width="15%">ส่งโดย</th>
+                        <th width="10%">เวลา</th>
+                        <th width="77%">รายละเอียด</th>
+                      </tr>
+                    </thead>
+                  </table>
+                  <div
+                    className="row"
+                    style={{
+                      margin: '5px 0',
+                      width: '100%',
+                      height: '440px',
+                      overflow: 'scroll'
+                    }}
+                  >
+                    <table width="100%">
+                      {this.props.customerTable.logs.map(log => (
+                        <tbody>
+                          <tr>
+                            <td valign="top" width="15%">
+                              {log.short_name}
+                            </td>
+                            <td valign="top" width="10%">
+                              {moment(log.timestamp).format('hh:mm')}
+                            </td>
+                            {(() => {
+                              switch (log.status) {
+                                case 'sent':
+                                  return (
+                                    <td valid="top" width="75%">
+                                      สั่งอาหาร:<b>{log.name}</b> | จำนวน:<b>
+                                        {log.quantity}
+                                      </b>{' '}
+                                      {log.detail !== null
+                                        ? `หมายเหตุ:${log.detail}`
+                                        : ``}
+                                    </td>
+                                  );
+                                  break;
+                                case 'cancel':
+                                  return (
+                                    <td valid="top" width="75%">
+                                      ยกเลิกอาหาร:<b>{log.name}</b> | จำนวน:<b>
+                                        {log.quantity}
+                                      </b>{' '}
+                                      {log.detail !== null
+                                        ? `หมายเหตุ:${log.detail}`
+                                        : ``}
+                                    </td>
+                                  );
+                                  break;
+                                case 'complete':
+                                  return (
+                                    <td valid="top" width="75%">
+                                      พร้อมเสริฟอาหาร:<b>{log.name}</b>| จำนวน:<b
+                                      >
+                                        {log.quantity}
+                                      </b>
+                                    </td>
+                                  );
+                                  break;
+                                case 'opened':
+                                  return (
+                                    <td valid="top" width="75%">
+                                      เปิดโต๊ะ
+                                    </td>
+                                  );
+                                  break;
+                                case 'checked':
+                                  return (
+                                    <td valid="top" width="75%">
+                                      เรียกเช็คบิล
+                                    </td>
+                                  );
+                                  break;
+                                case 'discount':
+                                  return (
+                                    <td valid="top" width="75%">
+                                      ใส่ส่วนลดเป็น: {log.detail}
+                                    </td>
+                                  );
+                                default:
+                                  return <td valid="top" width="75%" />;
+                              }
+                            })()}
+                          </tr>
+                        </tbody>
+                      ))}
+                    </table>
+                  </div>
+                </div>
+              )}
+              <h4 style={{textAlign: 'right'}}>
+                รวม{' '}
+                {this.props.customerTable.currentOrders &&
+                  formatNumber(this.props.customerTable.currentOrders.reduce(
+                    (sum, order) => sum + order.price * order.quantity,
+                    0
+                  ))}.-
+              </h4>
+            </div>
+
+            {/* Function Buttons  */}
+
+            <div className="row mx-auto">
+              <div className="col-sm-2">
+                <button className="btn btn-info">
+                  <span style={{fontSize: '25px'}}>
+                    <i className="fa fa-exchange" />
+                  </span>
+                </button>
+              </div>
+              <div className="col-sm-2">
+                <button
+                  onClick={() => this.discountHandler()}
+                  title="ลดราคา"
+                  className="btn btn-info"
+                >
+                  <span style={{fontSize: '25px'}}>
+                    <FontAwesomeIcon icon={faPercentage} color="white" />
+                  </span>
+                </button>
+              </div>
+              <div className="col-sm-2">
+                {this.props.customerTable.currentOrders &&
+                this.props.customerTable.currentOrders.length !== 0 ? (
+                  <button
+                    onClick={() => this.checkBill()}
+                    title="เช็คบิล"
+                    className="btn btn-info px-3"
+                  >
+                    <span style={{fontSize: '25px'}}>
+                      <FontAwesomeIcon
+                        icon={faFileInvoiceDollar}
+                        color="white"
+                      />
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    title="เช็คบิล"
+                    className="btn btn-secondary px-3"
+                    disabled
+                  >
+                    <span style={{fontSize: '25px'}}>
+                      <FontAwesomeIcon
+                        icon={faFileInvoiceDollar}
+                        color="white"
+                      />
+                    </span>
+                  </button>
+                )}
+              </div>
+              <div className="col-sm-2">
+                {this.props.customerTable.status === 'checked' ? (
+                  <button title="รับเงิน" className="btn btn-info" onClick={() => this.paymentHandler()}>
+                    <span style={{fontSize: '25px'}}>
+                      <i className="fa fa-money" />
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    title="รับเงิน"
+                    className="btn btn-secondary"
+                    disabled
+                  >
+                    <span style={{fontSize: '25px'}}>
+                      <i className="fa fa-money" />
+                    </span>
+                  </button>
+                )}
+              </div>
+
+              <div className="col-sm-2">
+                {this.state.newOrderItems.length !== 0 ? (
+                  <button
+                    title="ส่งรายการ"
+                    className="btn btn-info"
+                    onClick={() => this.sendNewItemsHandler()}
+                  >
+                    <span style={{fontSize: '25px'}}>
+                      <i className="fa fa-send" />
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    title="ส่งรายการ"
+                    className="btn btn-secondary"
+                    disabled
+                  >
+                    <span style={{fontSize: '25px'}}>
+                      <i className="fa fa-send" />
+                    </span>
+                  </button>
+                )}
+              </div>
+            </div>
+            <form onSubmit={this.codeInputSubmit}>
+              <div className="row" style={{margin: '10px 0 0 0'}}>
+                <div className="input-group" style={{margin: '18px 0 0 0'}}>
+                  <div className="input-group-prepend">
+                    <span className="input-group-text" id="basic-addon1">
+                      Code:{' '}
+                    </span>
+                  </div>
+                  <input
+                    autoFocus
+                    type="text"
+                    className="form-control"
+                    placeholder="รหัส*จำนวน#หมายเหตุ"
+                    onChange={this.codeInputHandler}
+                    value={this.state.codeInput}
+                  />
+                  <div className="input-group-append">
+                    <button className="btn btn-success" type="submit">
+                      เพิ่ม
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
         </div>
-      )
-    }
+      </div>
+    );
   }
+}
 
-
-const mapStateToprops = (state) => {
+const mapStateToprops = state => {
   return {
     user: state.user,
     customerTable: state.customerTable,
     foodItems: state.foodItems
-  }
-}
+  };
+};
 
 export default connect(mapStateToprops)(CustomerTable);
 
-
-
-
-
-class MenuItemBox extends React.Component{
-
-  render(){
+class MenuItemBox extends React.Component {
+  render() {
     const style = {
-      background:'green',
-      height:'100px',
-      margin:'5px',
+      background: 'green',
+      height: '100px',
+      margin: '5px',
       borderRadius: '10px',
-      color:'white',
-      position: 'relative',
-
-    }
+      color: 'white',
+      position: 'relative'
+    };
 
     return (
-      <div className="col-sm-2" style={style} onClick={() => this.props.onClick({
-        quantity: 1,
-        name: this.props.label,
-        price: this.props.price,
-        code:this.props.code})}>
-        <p style={{position:'absolute', left: '3px', fontSize:'12px'}}>{this.props.code}</p>
-        <p style={{position:'absolute', top:'20px',  left: '3px', textAlign:'center'}}>{this.props.label}</p>
-        <p style={{position:'absolute', bottom:'-15px', right: '3px', fontSize:'12px'}}>{this.props.price}.-</p>
+      <div
+        className="col-sm-2"
+        style={style}
+        onClick={() =>
+          this.props.onClick({
+            quantity: 1,
+            name: this.props.label,
+            price: this.props.price,
+            code: this.props.code
+          })
+        }
+      >
+        <p style={{position: 'absolute', left: '3px', fontSize: '12px'}}>
+          {this.props.code}
+        </p>
+        <p
+          style={{
+            position: 'absolute',
+            top: '20px',
+            left: '3px',
+            textAlign: 'center'
+          }}
+        >
+          {this.props.label}
+        </p>
+        <p
+          style={{
+            position: 'absolute',
+            bottom: '-15px',
+            right: '3px',
+            fontSize: '12px'
+          }}
+        >
+          {formatNumber(this.props.price)}.-
+        </p>
       </div>
-    )
+    );
   }
 }
-
-
 
 const orderListTitleStyle = {
   margin: '10px auto',
   height: '40px',
   width: '80%',
   borderBottom: '1px solid black'
-}
+};
 
 const orderListPageStyle = {
   background: '#fff',
   height: '80%',
   borderRadius: '10px'
-}
+};
 
 const orderListDivStyle = {
-  border:'2px solid black'
-}
+  border: '2px solid black'
+};
 
 const menuItemStyle = {
-  border:'2px solid black',
+  border: '2px solid black',
   height: '630px',
   overflow: 'scroll'
-}
+};
 
 const seachBoxStyle = {
-  border:'2px solid black',
+  border: '2px solid black',
   height: '70px'
-}
+};
 
 const menuSectionStyle = {
-  border:'2px solid black',
-  height: '700px',
-}
-
+  border: '2px solid black',
+  height: '700px'
+};
 
 class EditNewMenuItem extends React.Component {
-  constructor(props){
+  constructor(props) {
     super(props);
     this.state = {
       quantity: this.props.payload.quantity,
       remark: this.props.payload.remark || ''
-    }
+    };
   }
-  remarkOnChangeHandler = (e) =>{
+  remarkOnChangeHandler = e => {
     this.setState({
       remark: e.target.value
-    })
-  }
+    });
+  };
   increaseQuantity = () => {
     const current = this.state.quantity;
     this.setState({
       quantity: current + 1
     });
-  }
+  };
   decreaseQuantity = () => {
     const current = this.state.quantity;
-    if(current > 1){
+    if (current > 1) {
       this.setState({
         quantity: current - 1
       });
     }
-  }
-  render(){
-    return(
+  };
+  render() {
+    return (
       <div className="editNewMenuItemFill">
         <div className="editNewMenuItemContent">
           <div className="container">
@@ -712,10 +1099,25 @@ class EditNewMenuItem extends React.Component {
             </div>
             <div className="row" style={{marginTop: '20px'}}>
               <div className="col-sm-12">
-                <h4 style={{margin: '10px'}}>จำนวน:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                  <span><button className="btn btn-success" onClick={this.decreaseQuantity}>-</button></span>
+                <h4 style={{margin: '10px'}}>
+                  จำนวน:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                  <span>
+                    <button
+                      className="btn btn-success"
+                      onClick={this.decreaseQuantity}
+                    >
+                      -
+                    </button>
+                  </span>
                   &nbsp; {this.state.quantity} &nbsp;
-                  <span><button className="btn btn-success" onClick={this.increaseQuantity}>+</button></span>
+                  <span>
+                    <button
+                      className="btn btn-success"
+                      onClick={this.increaseQuantity}
+                    >
+                      +
+                    </button>
+                  </span>
                 </h4>
               </div>
             </div>
@@ -723,21 +1125,47 @@ class EditNewMenuItem extends React.Component {
               <div className="col-sm-12">
                 <div className="form-group">
                   <label>หมายเหตุ</label>
-                  <input type="text" className="form-control" onChange={this.remarkOnChangeHandler} value={this.state.remark} />
+                  <input
+                    type="text"
+                    className="form-control"
+                    onChange={this.remarkOnChangeHandler}
+                    value={this.state.remark}
+                  />
                 </div>
               </div>
             </div>
             <div className="row" style={{marginTop: '20px'}}>
               <div className="col-sm-4">
-                <button onClick={() => this.props.onClickClose()} className="btn btn-secondary">ปิด</button>
-              </div>
-              <div className="col-sm-4">
-                <button onClick={() => this.props.onClickDelete(this.props.payload.code)} className="btn btn-danger">ลบ</button>
+                <button
+                  onClick={() => this.props.onClickClose()}
+                  className="btn btn-secondary"
+                >
+                  ปิด
+                </button>
               </div>
               <div className="col-sm-4">
                 <button
-                  onClick={() => this.props.onClickSave({code: this.props.payload.code, quantity: this.state.quantity, remark: this.state.remark.trim()})}
-                  className="btn btn-info">บันทึก</button>
+                  onClick={() =>
+                    this.props.onClickDelete(this.props.payload.code)
+                  }
+                  className="btn btn-danger"
+                >
+                  ลบ
+                </button>
+              </div>
+              <div className="col-sm-4">
+                <button
+                  onClick={() =>
+                    this.props.onClickSave({
+                      code: this.props.payload.code,
+                      quantity: this.state.quantity,
+                      remark: this.state.remark.trim()
+                    })
+                  }
+                  className="btn btn-info"
+                >
+                  บันทึก
+                </button>
               </div>
             </div>
           </div>
@@ -748,51 +1176,51 @@ class EditNewMenuItem extends React.Component {
 }
 
 class DeleteOrderItemOption extends React.Component {
-  constructor(props){
+  constructor(props) {
     super(props);
     this.state = {
       quantity: this.props.payload.quantity,
       remark: '',
       remarkError: false
-    }
+    };
   }
-  remarkOnChangeHandler = (e) =>{
+  remarkOnChangeHandler = e => {
     this.setState({
       remark: e.target.value
-    })
-  }
+    });
+  };
   increaseQuantity = () => {
     const current = this.state.quantity;
-    if(current < this.props.payload.quantity){
+    if (current < this.props.payload.quantity) {
       this.setState({
         quantity: current + 1
       });
     }
-  }
+  };
   decreaseQuantity = () => {
     const current = this.state.quantity;
-    if(current > 1){
+    if (current > 1) {
       this.setState({
         quantity: current - 1
       });
     }
-  }
+  };
   deleteBtnHandler = () => {
-    if(this.state.remark.trim() !== ''){
+    if (this.state.remark.trim() !== '') {
       this.props.onClickDelete({
         id: this.props.payload.id,
         quantity: this.state.quantity,
-        remark: this.state.remark,
+        remark: this.state.remark
       });
-    }else{
+    } else {
       this.setState({
         remarkError: true,
         remark: ''
-      })
+      });
     }
-  }
-  render(){
-    return(
+  };
+  render() {
+    return (
       <div className="editNewMenuItemFill">
         <div className="editNewMenuItemContent">
           <div className="container">
@@ -808,27 +1236,62 @@ class DeleteOrderItemOption extends React.Component {
             </div>
             <div className="row">
               <div className="col-sm-12 text-center">
-                <h4 style={{margin: '10px'}}>จำนวน:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                  <span><button className="btn btn-success" onClick={this.decreaseQuantity}>-</button></span>
+                <h4 style={{margin: '10px'}}>
+                  จำนวน:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                  <span>
+                    <button
+                      className="btn btn-success"
+                      onClick={this.decreaseQuantity}
+                    >
+                      -
+                    </button>
+                  </span>
                   &nbsp; {this.state.quantity} &nbsp;
-                  <span><button className="btn btn-success" onClick={this.increaseQuantity}>+</button></span>
+                  <span>
+                    <button
+                      className="btn btn-success"
+                      onClick={this.increaseQuantity}
+                    >
+                      +
+                    </button>
+                  </span>
                 </h4>
               </div>
             </div>
             <div className="row" style={{marginTop: '20px'}}>
               <div className="col-sm-12">
                 <div className="form-group">
-                  <label>หมายเหตุ {this.state.remarkError && <span style={{color: 'red'}}>*กรุณาใส่หมายเหตุ</span>}</label>
-                  <input type="text" className="form-control" onChange={this.remarkOnChangeHandler} value={this.state.remark} />
+                  <label>
+                    หมายเหตุ{' '}
+                    {this.state.remarkError && (
+                      <span style={{color: 'red'}}>*กรุณาใส่หมายเหตุ</span>
+                    )}
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    onChange={this.remarkOnChangeHandler}
+                    value={this.state.remark}
+                  />
                 </div>
               </div>
             </div>
             <div className="row" style={{marginTop: '20px'}}>
               <div className="col-sm-6 text-center">
-                <button onClick={() => this.props.onClickClose()} className="btn btn-secondary">ปิด</button>
+                <button
+                  onClick={() => this.props.onClickClose()}
+                  className="btn btn-secondary"
+                >
+                  ปิด
+                </button>
               </div>
               <div className="col-sm-6 text-center">
-                <button onClick={() => this.deleteBtnHandler()} className="btn btn-danger">ยกเลิก</button>
+                <button
+                  onClick={() => this.deleteBtnHandler()}
+                  className="btn btn-danger"
+                >
+                  ยกเลิก
+                </button>
               </div>
             </div>
           </div>
@@ -838,53 +1301,53 @@ class DeleteOrderItemOption extends React.Component {
   }
 }
 
-class DiscountOption extends React.Component{
-  constructor(props){
+class DiscountOption extends React.Component {
+  constructor(props) {
     super(props);
     this.state = {
       type: props.info !== undefined ? props.info.type : 'percentage',
       percentage: props.info !== undefined ? props.info.amount : '',
       section: props.info !== undefined ? props.info.section : 'f&b',
-      amount : props.info !== undefined ? props.info.amount : '',
+      amount: props.info !== undefined ? props.info.amount : '',
       remark: props.info !== undefined ? props.info.remark : ''
-    }
+    };
   }
-  onTypeChange = (value) => {
+  onTypeChange = value => {
     this.setState({
       type: value,
       percentage: value !== 'percentage' ? '' : this.state.percentage,
       amount: value !== 'amount' ? '' : this.state.amount,
       remark: value !== 'complimentary' ? '' : this.state.remark
-    })
-  }
-  onSectionChnage = (value) => {
+    });
+  };
+  onSectionChnage = value => {
     this.setState({
       section: value
-    })
-  }
-  onChangePercentage = (e) => {
+    });
+  };
+  onChangePercentage = e => {
     const amount = e.target.value;
-    if(!amount || amount.match(/^[1-9][0-9]?$|^100$/)){
+    if (!amount || amount.match(/^[1-9][0-9]?$|^100$/)) {
       this.setState({
         percentage: amount
-      })
+      });
     }
-  }
-  onChangeAmount = (e) => {
+  };
+  onChangeAmount = e => {
     const amount = e.target.value;
-    if(!amount || amount.match(/^\d{1,}?$/)){
+    if (!amount || amount.match(/^\d{1,}?$/)) {
       this.setState({
         amount: amount
-      })
+      });
     }
-  }
-  onRemarkChange = (e) =>{
+  };
+  onRemarkChange = e => {
     this.setState({
       remark: e.target.value
-    })
-  }
-  render(){
-    return(
+    });
+  };
+  render() {
+    return (
       <div className="editNewMenuItemFill">
         <div className="discountContent">
           <div className="container">
@@ -897,27 +1360,36 @@ class DiscountOption extends React.Component{
             <div className="row" style={{marginTop: '20px'}}>
               <div className="col-sm-4 text-center">
                 <label class="radio-inline">
-                  <input type="radio"
-                    onClick={() =>this.onTypeChange('percentage')}
+                  <input
+                    type="radio"
+                    onClick={() => this.onTypeChange('percentage')}
                     name="optradio"
                     checked={this.state.type === 'percentage'}
-                  /> เปอร์เซ็นต์</label>
+                  />{' '}
+                  เปอร์เซ็นต์
+                </label>
               </div>
               <div className="col-sm-4 text-center">
                 <label class="radio-inline">
-                  <input type="radio"
-                    onClick={() =>this.onTypeChange('amount')}
+                  <input
+                    type="radio"
+                    onClick={() => this.onTypeChange('amount')}
                     name="optradio"
                     checked={this.state.type === 'amount'}
-                  /> จำนวนเงิน</label>
+                  />{' '}
+                  จำนวนเงิน
+                </label>
               </div>
               <div className="col-sm-4 text-center">
                 <label class="radio-inline">
-                  <input type="radio"
-                    onClick={() =>this.onTypeChange('complimentary')}
+                  <input
+                    type="radio"
+                    onClick={() => this.onTypeChange('complimentary')}
                     name="optradio"
                     checked={this.state.type === 'complimentary'}
-                  /> Compl.</label>
+                  />{' '}
+                  Compl.
+                </label>
               </div>
             </div>
             <br />
@@ -925,68 +1397,308 @@ class DiscountOption extends React.Component{
             <div className="row" style={{marginTop: '20px'}}>
               <div className="col-sm-4 text-center">
                 <label class="radio-inline">
-                  <input type="radio"
+                  <input
+                    type="radio"
                     name="section"
-                    onClick={() =>this.onSectionChnage('f&b')}
+                    onClick={() => this.onSectionChnage('f&b')}
                     disabled={this.state.type !== 'percentage'}
                     checked={this.state.section === 'f&b'}
-                  /> อาหาร & เครื่องดื่ม</label>
+                  />{' '}
+                  อาหาร & เครื่องดื่ม
+                </label>
               </div>
               <div className="col-sm-4 text-center">
                 <label class="radio-inline">
-                  <input type="radio"
+                  <input
+                    type="radio"
                     name="section"
-                    onClick={() =>this.onSectionChnage('f')}
+                    onClick={() => this.onSectionChnage('f')}
                     disabled={this.state.type !== 'percentage'}
                     checked={this.state.section === 'f'}
-                  /> เฉพาะอาหาร</label>
+                  />{' '}
+                  เฉพาะอาหาร
+                </label>
               </div>
               <div className="col-sm-4 text-center">
                 <label class="radio-inline">
-                  <input type="radio"
+                  <input
+                    type="radio"
                     name="section"
-                    onClick={() =>this.onSectionChnage('b')}
+                    onClick={() => this.onSectionChnage('b')}
                     disabled={this.state.type !== 'percentage'}
                     checked={this.state.section === 'b'}
-                  /> เฉพาะเครื่องดื่ม</label>
+                  />{' '}
+                  เฉพาะเครื่องดื่ม
+                </label>
               </div>
             </div>
             <div className="row" style={{marginTop: '20px'}}>
               <div className="col-sm-8 mx-auto">
-                {this.state.type === 'percentage' ?
-                <div className="input-group mb-3">
-                  <input type="text" className="form-control" placeholder="จำนวน" value={this.state.percentage} onChange={this.onChangePercentage} />
-                  <div className="input-group-append">
-                    <span className="input-group-text" id="basic-addon2">%.</span>
+                {this.state.type === 'percentage' ? (
+                  <div className="input-group mb-3">
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="จำนวน"
+                      value={this.state.percentage}
+                      onChange={this.onChangePercentage}
+                    />
+                    <div className="input-group-append">
+                      <span className="input-group-text" id="basic-addon2">
+                        %.
+                      </span>
+                    </div>
                   </div>
-                </div>
-                : this.state.type === 'amount' ?
-                <div className="input-group mb-3">
-                  <input type="text" className="form-control" placeholder="จำนวน" value={this.state.amount} onChange={this.onChangeAmount}  />
-                  <div className="input-group-append">
-                    <span className="input-group-text" id="basic-addon2">บาท.</span>
+                ) : this.state.type === 'amount' ? (
+                  <div className="input-group mb-3">
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="จำนวน"
+                      value={this.state.amount}
+                      onChange={this.onChangeAmount}
+                    />
+                    <div className="input-group-append">
+                      <span className="input-group-text" id="basic-addon2">
+                        บาท.
+                      </span>
+                    </div>
                   </div>
-                </div> :
-                <div className="input-group mb-3">
-                  <input onChange={this.onRemarkChange} type="currency" className="form-control" placeholder="หมายเหตุ" value={this.state.remark} />
-                </div>
-              }
+                ) : (
+                  <div className="input-group mb-3">
+                    <input
+                      onChange={this.onRemarkChange}
+                      type="currency"
+                      className="form-control"
+                      placeholder="หมายเหตุ"
+                      value={this.state.remark}
+                    />
+                  </div>
+                )}
               </div>
             </div>
             <div className="row" style={{marginTop: '20px'}}>
               <div className="col-sm-6 text-center">
-                <button onClick={() => this.props.onClose()} className="btn btn-secondary">ปิด</button>
+                <button
+                  onClick={() => this.props.onClose()}
+                  className="btn btn-secondary"
+                >
+                  ปิด
+                </button>
               </div>
               <div className="col-sm-6 text-center">
                 <button
-                  disabled={!(this.state.amount || this.state.percentage || this.state.remark) }
+                  disabled={
+                    !(
+                      this.state.amount ||
+                      this.state.percentage ||
+                      this.state.remark
+                    )
+                  }
                   onClick={() => this.props.onSubmit(this.state)}
-                  className="btn btn-warning" >ยืนยัน</button>
+                  className="btn btn-warning"
+                >
+                  ยืนยัน
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
+    );
+  }
+}
+
+class Payment extends React.Component{
+  constructor(props){
+    super(props);
+    this.state = {
+      payable: this.props.payload.sub_total_amount - this.props.payload.discount_amount,
+      totalAmount: 0,
+      paymentType: 'cash',
+      showChange: false,
+      changeAmount: 0
+    }
+  }
+  addAmount = (amount) => {
+    if(this.state.paymentType === 'cash'){
+      this.setState({
+        totalAmount: this.state.totalAmount + amount
+      })
+    }
+  }
+  setExactAmount = () => {
+    if(this.state.paymentType === 'cash'){
+      this.setState({
+        totalAmount: this.state.payable
+      })
+    }
+  }
+  clearAmount = () => {
+    if(this.state.paymentType === 'cash'){
+      this.setState({
+        totalAmount: 0
+      });
+    }
+  }
+  changePaymentType = (type) => {
+    this.setState({
+      paymentType: type
+    })
+  }
+  paymentSubmit = () => {
+    this.setState({
+      changeAmount: this.state.totalAmount - this.state.payable,
+      showChange:true
+    })
+    this.props.paymentSubmit(this.state);
+  }
+  render() {
+    return (
+      <div className="editNewMenuItemFill">
+        <div className="paymentContent">
+          <div className="container">
+
+            {this.state.showChange &&
+              <div className="editNewMenuItemFill">
+                <div className="changeContent">
+                  <div className="container">
+                    <div className="row mt-3">
+                      <div className="col-sm-12 text-center">
+                        <h2>เงินทอน:</h2>
+                      </div>
+                    </div>
+                    <div className="row mt-3">
+                      <div className="col-sm-12 text-center">
+                        <h1>{formatNumber(this.state.changeAmount)}.- บาท</h1>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>}
+
+            <div className="row mt-3">
+              <div className="col-sm-12 text-center">
+                <h3>รับเงิน</h3>
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-sm-6 text-center">
+                <h5>ราคารวม</h5>
+                <p>{this.props.payload.sub_total_amount}</p>
+              </div>
+              <div className="col-sm-6 text-center">
+                <h5>ส่วนลด</h5>
+                <p>{this.props.payload.discount_amount || 0}</p>
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-sm-12 text-center">
+                <h1>ยอดเงินที่ต้องชำระ: <span>{this.state.paymentType === 'card' ? formatNumber(Math.ceil(this.state.payable * 1.03)) : formatNumber(this.state.payable)}.-</span></h1>
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-sm-12 text-center">
+                <input type="text" size="20" value={formatNumber(this.state.totalAmount)+'.-'} style={
+                  {
+                    fontSize: '30px',
+                    textAlign: 'right',
+                    paddingRight: '30px',
+                    color: this.state.paymentType === 'cash' ? 'black' : 'grey'
+                  }} />
+              </div>
+            </div>
+            <div className="row mt-4 mx-4">
+            <AmountButton addAmount={() => this.addAmount(1000)} amount="1,000" paymentType={this.state.paymentType}/>
+            <AmountButton addAmount={() => this.addAmount(500)} amount="500" paymentType={this.state.paymentType}/>
+            <AmountButton addAmount={() => this.addAmount(100)} amount="100" paymentType={this.state.paymentType}/>
+            </div>
+            <div className="row mx-4">
+              <AmountButton addAmount={() => this.addAmount(50)} amount="50" paymentType={this.state.paymentType}/>
+              <AmountButton addAmount={() => this.addAmount(20)} amount="20" paymentType={this.state.paymentType}/>
+              <AmountButton addAmount={() => this.addAmount(10)} amount="10" paymentType={this.state.paymentType}/>
+            </div>
+            <div className="row mx-4">
+              <AmountButton addAmount={() => this.addAmount(5)} amount="5" paymentType={this.state.paymentType}/>
+              <AmountButton addAmount={() => this.addAmount(1)} amount="1" paymentType={this.state.paymentType}/>
+              <AmountButton addAmount={() => this.setExactAmount()} amount="พอดี" paymentType={this.state.paymentType}/>
+            </div>
+            <div className="row mx-4">
+              <div onClick={() => this.clearAmount()} className="col-sm-12" style={{
+                fontSize: '30px',
+                width: '100%',
+                height: '45px',
+                background: 'white',
+                textAlign: 'center',
+                border: `1px solid ${this.state.paymentType === 'cash' ? 'black' : 'grey'}`,
+                color: this.state.paymentType === 'cash' ? 'black' : 'grey'
+              }}>
+                ลบ
+              </div>
+            </div>
+            <div className="row mt-4">
+              <div className="col-sm-6 text-center">
+                <label style={{width: '80%'}}>
+                  <input type="radio" name="paymentType"
+                    checked={this.state.paymentType === 'cash'}
+                    onClick={() => this.changePaymentType('cash')}
+                  />
+                   <div style={this.paymentTypeStyle}>
+                     เงินสด
+                   </div>
+                </label>
+              </div>
+              <div className="col-sm-6 text-center">
+                <label style={{width: '80%'}}>
+                  <input type="radio" name="paymentType"
+                    checked={this.state.paymentType === 'card'}
+                    onClick={() => this.changePaymentType('card')}
+                  />
+                   <div style={this.paymentTypeStyle}>
+                     บัตร เครดิต / เดบิด
+                   </div>
+                </label>
+              </div>
+            </div>
+            <div className="row mt-4">
+              <div className="col-sm-6 text-center">
+                <button onClick={() => this.props.onClose()} className="btn btn-secondary">ปิด</button>
+              </div>
+              <div className="col-sm-6 text-center">
+                {this.state.totalAmount >= this.state.payable || this.state.paymentType === 'card'?
+                <button onClick={() => this.paymentSubmit()} className="btn btn-success">ยืนยัน</button>
+              : <button className="btn btn-success" disabled>ยืนยัน</button>}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     )
   }
+  paymentTypeStyle = {
+    fontSize: '20px',
+    height: '45px',
+    background: 'white',
+    textAlign: 'center',
+    border: '1px solid black'
+  }
+
+}
+
+const AmountButton = (props) => {
+  const amountButtonStyle = {
+    fontSize: '30px',
+    width: '100%',
+    height: '45px',
+    background: 'white',
+    textAlign: 'center',
+    border: `1px solid ${props.paymentType === 'cash' ? 'black' : 'grey'}`,
+    color: props.paymentType === 'cash' ? 'black' : 'grey'
+  }
+  return(
+    <div onClick={() => props.addAmount()} className="col-sm-4 amountButtonStyle" style={amountButtonStyle} disabled>
+        {props.amount}
+    </div>
+  )
 }
