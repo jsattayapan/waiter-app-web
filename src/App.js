@@ -10,6 +10,7 @@ import LoginPage from './screens/LoginPage';
 
 import configureStore from './Redux/store/configureStore';
 
+
 export const store = configureStore();
 
 const jsx = (

@@ -8,6 +8,9 @@ import { TextInput } from '../components/TextInput';
 import { login } from '../brains/user';
 import { initialSocket } from '../brains/socket';
 
+
+import Speech from 'speak-tts'
+
 class LoginForm extends React.Component{
   state = {
     username: '',
