@@ -40,7 +40,8 @@ import {
   faEdit,
   faFileInvoiceDollar,
   faTrashAlt,
-  faPercentage
+  faPercentage,
+  faArrowDown
 } from '@fortawesome/free-solid-svg-icons';
 
 import { formatNumber } from './../helpers/utilities';
@@ -473,6 +474,7 @@ class CustomerTable extends React.Component {
           <ChangeTable
             tables={this.state.tables}
             orders={this.props.customerTable.currentOrders}
+            tableNumber={this.props.customerTable.table_number}
           />
         )}
         {this.state.payment.show && (
@@ -1780,7 +1782,10 @@ class ChangeTable extends React.Component {
     this.state = {
       selectedTable: '',
       selectedTableId: null,
-      selectedOrderList: []
+      selectedOrderList: [],
+      confirmSection: false,
+      remainOrders:[],
+      tables: this.props.tables.filter(table => (table.number !== this.props.tableNumber))
     }
     console.log(props.orders);
   }
@@ -1798,9 +1803,9 @@ class ChangeTable extends React.Component {
       selectedTableId: id
     })
   }
-  addToList = (id, quantity) => {
+  addToList = (id, name, quantity) => {
     const current = this.state.selectedOrderList;
-    current.push({id, quantity: parseInt(quantity)});
+    current.push({id, name, quantity: parseInt(quantity)});
     this.setState({
       selectedOrderList: current
     })
@@ -1822,10 +1827,51 @@ class ChangeTable extends React.Component {
       selectedOrderList: current
     })
   }
+  nextButtonClick = () => {
+    var remainOrders = [];
+    this.props.orders.forEach(order => {
+      var remainOrder = 1;
+      this.state.selectedOrderList.forEach((selectedOrder) => {
+        if(order.id === selectedOrder.id){
+          const remainQuantity = order.quantity - selectedOrder.quantity;
+          if(remainQuantity !== 0){
+            //Found Remain
+            remainOrder = {name: order.name, quantity: remainQuantity}
+          }else {
+            //Found Not Remain
+            remainOrder = 0
+          }
+        }
+      })
+      if(remainOrder === 1){
+        remainOrders.push(order)
+      }else if(remainOrder !== 0){
+        remainOrders.push(remainOrder)
+      }
+    })
+
+    this.setState({
+      confirmSection: true,
+      remainOrders
+    })
+  }
+  backbutoon = () => {
+    this.setState({
+      confirmSection: false,
+    })
+  }
   render(){
     return(
       <div className="editNewMenuItemFill">
-        {console.log('Current list', this.state.selectedOrderList)}
+        { this.state.confirmSection &&
+          <ChangeTableConfirm
+            tableNumber={this.props.tableNumber}
+            remainOrders={this.state.remainOrders}
+            selectedTable={this.state.selectedTable}
+            selectedOrderList={this.state.selectedOrderList}
+            backButton={this.backbutoon}
+           />
+        }
         <div className="paymentContent">
           <div className="container">
             <div className="row mt-3">
@@ -1833,124 +1879,103 @@ class ChangeTable extends React.Component {
                 <h3>ย้ายโต๊ะ</h3>
               </div>
             </div>
-            <div className="row">
-              <div className="col-sm-6 text-center">
-                <label style={{width: '80%'}}>
-                  <input type="radio" name="transfer"
-                  />
-                   <div style={this.paymentTypeStyle}>
-                     ทุกรายการ
-                   </div>
-                </label>
-              </div>
-              <div className="col-sm-6 text-center">
-                <label style={{width: '80%'}}>
-                  <input type="radio" name="transfer"
-                  />
-                   <div style={this.paymentTypeStyle}>
-                     บางรายการ
-                   </div>
-                </label>
-              </div>
-            </div>
-            <div className="row" >
-              <div className="col-sm-11 mx-auto" style={{border: '1px solid black', padding: '10px'}}>
-                <table width="100%">
-                  <thead>
-                    <tr>
-                      <th style={{textAlign: 'center'}} width="10%">
-                        ย้าย
-                      </th>
-                      <th width="10%">จำนวน</th>
-                      <th width="80%">รายการ</th>
-                    </tr>
-                  </thead>
-                </table>
-                <div style={{
-                  margin: '5px 0',
-                  width: '100%',
-                  height: '240px',
-                  overflow: 'scroll'
-                }}>
-                  <table width="100%">
-                    <tbody>
-                      {this.props.orders.map((order, index) => (
+                <div className="row mt-4" >
+                  <div className="col-sm-11 mx-auto" style={{border: '1px solid black', padding: '10px'}}>
+                    <table width="100%">
+                      <thead>
+                        <tr>
+                          <th style={{textAlign: 'center'}} width="10%">
+                            ย้าย
+                          </th>
+                          <th width="10%">จำนวน</th>
+                          <th width="80%">รายการ</th>
+                        </tr>
+                      </thead>
+                    </table>
+                    <div style={{
+                      margin: '5px 0',
+                      width: '100%',
+                      height: '330px',
+                      overflow: 'scroll'
+                    }}>
+                      <table width="100%">
+                        <tbody>
+                          {this.props.orders.map((order, index) => (
 
-                        <OrderLineForTransfer
-                          quantity={order.quantity}
-                          name={order.name}
-                          id={order.id}
-                          updateToList={this.updateToList}
-                          addToList={this.addToList}
-                          removeFromList={this.removeFromList}
-                          key={index}
-                         />
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-            <div className="row mt-3">
-              <div className="col-sm-12 text-center">
-                <h3>เลือกโต๊ะ: {this.state.selectedTable}</h3>
-              </div>
-            </div>
-            <div className="row">
-              <div className="col-sm-12 text-center">
-                <div class="container-fluid" style={{
-                  margin: '5px 0',
-                  width: '100%',
-                  height: '70px',
-                  overflow: 'scroll'
-                }}>
-                  <div className="row flex-row flex-nowrap">
-                    {
-                      this.props.tables.map((table, index) => (
-                        <div className="col-3">
-
-                          <div style={{
-                            background:
-                              table.status === 'opened'
-                                ? '#5291ff'
-                                : table.status === 'checked' ? '#C82333' : '#C6E0F2',
-                             height: '40px'
-                           }}
-                            onClick={() => this.tableOnClick(table.number, table.id)}
-                            >
-                            <h3>
-                              {table.number}
-                            </h3>
-                          </div>
-                        </div>
-                      ))
-                    }
+                            <OrderLineForTransfer
+                              quantity={order.quantity}
+                              name={order.name}
+                              id={order.id}
+                              updateToList={this.updateToList}
+                              addToList={this.addToList}
+                              removeFromList={this.removeFromList}
+                              key={index}
+                             />
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
-              </div>
-            </div>
-            <div className="row mt-4">
-              <div className="col-sm-6 text-center">
-                <button className="btn btn-secondary">
-                  ปิด
-                </button>
-              </div>
-              <div className="col-sm-6 text-center">
-                {
-                  this.state.selectedTable !== '' &&
-                  this.state.selectedOrderList.length !== 0 ?
-                  <button className="btn btn-success">
-                    ยืนยัน
-                  </button>
-                  :
-                  <button className="btn btn-success" disabled>
-                    ยืนยัน
-                  </button>
-                }
-              </div>
-            </div>
-          </div>
+                </div>
+                <div className="row mt-3">
+                  <div className="col-sm-12 text-center">
+                    <h3>เลือกโต๊ะ: {this.state.selectedTable}</h3>
+                  </div>
+                </div>
+                <div className="row">
+                  <div className="col-sm-12 text-center">
+                    <div class="container-fluid" style={{
+                      margin: '5px 0',
+                      width: '100%',
+                      height: '70px',
+                      overflow: 'scroll'
+                    }}>
+                      <div className="row flex-row flex-nowrap">
+                        {
+                          this.state.tables.map((table, index) => (
+                            <div className="col-3">
 
+                              <div style={{
+                                background:
+                                  table.status === 'opened'
+                                    ? '#5291ff'
+                                    : table.status === 'checked' ? '#C82333' : '#C6E0F2',
+                                 height: '40px'
+                               }}
+                                onClick={() => this.tableOnClick(table.number, table.id)}
+                                >
+                                <h3>
+                                  {table.number}
+                                </h3>
+                              </div>
+                            </div>
+                          ))
+                        }
+                        </div>
+                      </div>
+                  </div>
+                </div>
+                <div className="row mt-4">
+                  <div className="col-sm-6 text-center">
+                    <button className="btn btn-secondary">
+                      ปิด
+                    </button>
+                  </div>
+                  <div className="col-sm-6 text-center">
+                    {
+                      this.state.selectedTable !== '' &&
+                      this.state.selectedOrderList.length !== 0 ?
+                      <button onClick={() => this.nextButtonClick()} className="btn btn-success">
+                        ถัดไป
+                      </button>
+                      :
+                      <button className="btn btn-success" disabled>
+                        ถัดไป
+                      </button>
+                    }
+                  </div>
+                </div>
+          </div>
         </div>
       </div>
     )
@@ -1979,12 +2004,12 @@ class OrderLineForTransfer extends React.Component{
       }
     }
   }
-  onChecked = (id, quantity) => {
+  onChecked = (id, name, quantity) => {
     if(!this.state.checked){
       this.setState({
         checked: !this.state.checked
       })
-      this.props.addToList(id, quantity);
+      this.props.addToList(id, name, quantity);
     }else{
       this.setState({
         checked: !this.state.checked
@@ -2006,7 +2031,7 @@ class OrderLineForTransfer extends React.Component{
     return(
       <tr>
         <td style={{textAlign: 'center'}} width="10%">
-          <input type="checkbox" onClick={() => this.onChecked(this.props.id, this.state.quantity)} checked={this.state.checked}/>
+          <input type="checkbox" onClick={() => this.onChecked(this.props.id, this.props.name , this.state.quantity)} checked={this.state.checked}/>
         </td>
         <td width="10%"><input name={this.props.id} onBlur={this.onQuantityOutFocus} onChange={this.onQuantityChange} value={this.state.quantity}
           style={{width: '80%', background: this.state.checked ? 'white': '#e3e3e3'}} type="text" disabled={!this.state.checked}/></td>
@@ -2015,4 +2040,117 @@ class OrderLineForTransfer extends React.Component{
     )
   }
 
+}
+
+const ChangeTableConfirm = (props) => {
+  return(
+    <div className="editNewMenuItemFill">
+      <div className="paymentContent">
+        <div className="container">
+          <div className="row mt-3">
+            <div className="col-sm-12 text-center">
+              <h3>ย้ายโต๊ะ</h3>
+            </div>
+          </div>
+          <div>
+            <div className="row mt-1">
+              <div className="col-sm-12">
+                <h4>
+                  จากโต๊ะ: {props.tableNumber}
+                </h4>
+              </div>
+            </div>
+            <div className="row" >
+              <div className="col-sm-11 mx-auto" style={{border: '1px solid black', padding: '10px'}}>
+                <table width="100%">
+                  <thead>
+                    <tr>
+                      <th width="20%">จำนวน</th>
+                      <th width="80%">รายการคงเหลือ</th>
+                    </tr>
+                  </thead>
+                </table>
+                <div style={{
+                  margin: '5px 0',
+                  width: '100%',
+                  height: '140px',
+                  overflow: 'scroll'
+                }}>
+                  <table width="100%">
+                    <tbody>
+                      {
+                        props.remainOrders.map(order => (
+                          <tr>
+                            <td width="20%">{order.quantity}</td>
+                            <td width="80%">{order.name}</td>
+                          </tr>
+                        ))
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-sm-12 text-center">
+                <span style={{fontSize: '50px'}}>
+                  <FontAwesomeIcon size="20" icon={faArrowDown} />
+                </span>
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-sm-5">
+                <h4 className="">
+                  ย้ายไปโต๊ะ: {props.selectedTable}
+                </h4>
+              </div>
+            </div>
+            <div className="row" >
+              <div className="col-sm-11 mx-auto" style={{border: '1px solid black', padding: '10px'}}>
+                <table width="100%">
+                  <thead>
+                    <tr>
+                      <th width="20%">จำนวน</th>
+                      <th width="80%">รายการที่ย้าย</th>
+                    </tr>
+                  </thead>
+                </table>
+                <div style={{
+                  margin: '5px 0',
+                  width: '100%',
+                  height: '140px',
+                  overflow: 'scroll'
+                }}>
+                  <table width="100%">
+                    <tbody>
+                      {
+                        props.selectedOrderList.map(order => (
+                          <tr>
+                            <td width="20%">{order.quantity}</td>
+                            <td width="80%">{order.name}</td>
+                          </tr>
+                        ))
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div className="row mt-4">
+              <div className="col-sm-6 text-center">
+                <button onClick={() => props.backButton()} className="btn btn-secondary">
+                  ย้อนกลับ
+                </button>
+              </div>
+              <div className="col-sm-6 text-center">
+                  <button className="btn btn-success">
+                    ยืนยัน
+                  </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }

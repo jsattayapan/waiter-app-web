@@ -3,6 +3,7 @@ import React from 'react';
 import './Login.css';
 import { TopBuffer } from '../helpers/utilities';
 import Logo from '../assets/logo.png';
+import LoadingScreen from '../components/LoadingScreen'
 import { TextInput } from '../components/TextInput';
 
 import { login } from '../brains/user';
@@ -16,7 +17,8 @@ class LoginForm extends React.Component{
     username: '',
     password: '',
     error: '',
-    submitButton: 'Login'
+    submitButton: 'Login',
+    isLoading: false
   };
   onUsernameChange = (e) => {
     const username = e.target.value;
@@ -28,11 +30,15 @@ class LoginForm extends React.Component{
   };
   verifyLogin = (e) => {
     e.preventDefault();
-    this.setState(() => ({ submitButton: 'Loading...'}));
+    this.setState(() => ({
+      submitButton: 'Loading...',
+      isLoading: true
+    }));
     if(!this.state.username || !this.state.password){
       this.setState(() => ({
         error: 'กรุณากรอก username และ password!',
-        submitButton: 'Login'
+        submitButton: 'Login',
+        isLoading: false
       }));
     }else{
       this.setState(() => ({ error: '' }));
@@ -43,7 +49,8 @@ class LoginForm extends React.Component{
         }else{
           this.setState(() => ({
             error: userAuth.msg,
-            submitButton: 'Login'
+            submitButton: 'Login',
+            isLoading: false
           }));
         }
       });
@@ -54,6 +61,7 @@ class LoginForm extends React.Component{
     return(
       <div className="mx-auto mainStyle">
         <div className="container">
+        { this.state.isLoading && <LoadingScreen /> }
           <div className="col-8 mx-auto">
             <TopBuffer />
             <div className="row justify-content-center"><img alt="Jep's Logo" src={Logo}/></div>
@@ -74,5 +82,6 @@ class LoginForm extends React.Component{
     )
   }
 }
+
 
 export default LoginForm;

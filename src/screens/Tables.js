@@ -11,7 +11,7 @@ import {
   setTableLogs
 } from './../Redux/actions/customerTable';
 import {getTablesBySection} from './../Redux/selectors/tables';
-
+import LoadingScreen from '../components/LoadingScreen';
 import {HeaderBar} from './../components/HeaderBar';
 import {TopBuffer} from '../helpers/utilities';
 import {
@@ -38,7 +38,8 @@ class Tables extends React.Component {
     console.log(this.props.user);
     this.state = {
       currentTablePage: [],
-      showPopup: false
+      showPopup: false,
+      isLoading: false
     };
     //AUTHENTICATION
     isAuth(this.props.user.id, data => {
@@ -71,6 +72,9 @@ class Tables extends React.Component {
     }));
   };
   tableBoxClick = tableInfo => {
+    this.setState({
+      isLoading: true
+    })
     isTableOnHold(tableInfo.number, res => {
       if (res.status === 'available') {
         if (tableInfo.id !== null) {
@@ -84,10 +88,16 @@ class Tables extends React.Component {
             });
           });
         } else {
+          this.setState({
+            isLoading: false
+          })
           updateTableStatus(tableInfo.number, 'on_create', this.props.user.id);
           this.togglePopup(tableInfo.number);
         }
       } else {
+        this.setState({
+          isLoading: false
+        })
         console.log('Someone is useing');
         swal({
           icon: 'error',
@@ -109,6 +119,10 @@ class Tables extends React.Component {
     }
   };
   submitCreateTable = ({language, number_of_guest, tableNumber, zone}) => {
+    this.setState({
+      showPopup: false,
+      isLoading: true
+    })
     updateTableStatus(tableNumber, 'on_order', this.props.user.id);
     const info = {
       table_number: tableNumber,
@@ -131,6 +145,7 @@ class Tables extends React.Component {
   render() {
     return (
       <div className="container">
+        { this.state.isLoading && <LoadingScreen /> }
         {this.state.showPopup && (
           <RegisterTablePopup
             togglePopup={this.togglePopup}

@@ -12,9 +12,10 @@ export function login(number, passcode, callback){
         data: res.data
       });
     }).catch(e => {
+      const msg = e.response !== undefined ? e.response.data.msg : 'ไม่สามารถเชื่อมต่อกับเซิฟเวอร์ได้' ;
       callback({
         status: false,
-        msg: e.response.data.msg 
+        msg
       });
     });
 }
