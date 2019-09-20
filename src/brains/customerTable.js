@@ -138,6 +138,27 @@ export const completePayment = ({
   })
 }
 
+
+export const transferOrders = ({
+  tableNumber,
+  orders,
+  create_by,
+  transferType,
+  oldTableId}, callback) => {
+  const url = `${ serverIpAddress }api/restaurant/tables/customer-tables/transfer-orders`;
+  axios.post( url, {tableNumber, orders, create_by, oldTableId, transferType} ).then((response) => {
+    if(response.status === 200){
+      callback({
+        status: true
+      })
+    }else{
+      callback({
+        status: false
+      })
+    }
+  })
+}
+
 // var detail = '';
 // switch (status.status) {
 //   case 'opened':

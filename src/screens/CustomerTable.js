@@ -17,7 +17,8 @@ import {
   getTableLogs,
   getCustomerTableInfo,
   getCustomerTablePayment,
-  completePayment
+  completePayment,
+  transferOrders
 } from './../brains/customerTable';
 import {getAllFoodItems} from './../brains/foodItems';
 
@@ -460,6 +461,34 @@ class CustomerTable extends React.Component {
       }
     })
   }
+  onTableChangeClose = () => {
+    this.setState({
+      changeTable: {
+        show: false
+      }
+    })
+  }
+  submitTransfer = (tableNumber, orders, transferType) => {
+    transferOrders({
+      tableNumber,
+      orders,
+      transferType,
+      create_by: this.props.user.id,
+      oldTableId: this.props.customerTable.id
+    }, (response) => {
+      this.setState({
+        changeTable: {
+          show: false
+        }
+      });
+      if(response.status){
+        this.existButtonHandler();
+        swal('เสร็จสิ้น', 'รายการถูกบันทึก', 'success')
+      } else {
+        swal('เกิดข้อผิดพลาด', 'ไม่สามารถทำการย้ายโต๊ะได้', 'error')
+      }
+    })
+  }
   render() {
     return (
       <div className="container">
@@ -475,6 +504,8 @@ class CustomerTable extends React.Component {
             tables={this.state.tables}
             orders={this.props.customerTable.currentOrders}
             tableNumber={this.props.customerTable.table_number}
+            onClose={this.onTableChangeClose}
+            submitTransfer={this.submitTransfer}
           />
         )}
         {this.state.payment.show && (
@@ -1860,6 +1891,12 @@ class ChangeTable extends React.Component {
       confirmSection: false,
     })
   }
+  confirmTransfer = () => {
+    const newTableNumber = this.state.selectedTable;
+    const transferOrders = this.state.selectedOrderList;
+    const transferType = this.state.remainOrders.length === 0 ? 'full' : 'partial';
+    this.props.submitTransfer(newTableNumber, transferOrders, transferType);
+  }
   render(){
     return(
       <div className="editNewMenuItemFill">
@@ -1870,6 +1907,7 @@ class ChangeTable extends React.Component {
             selectedTable={this.state.selectedTable}
             selectedOrderList={this.state.selectedOrderList}
             backButton={this.backbutoon}
+            confirmTransfer={this.confirmTransfer}
            />
         }
         <div className="paymentContent">
@@ -1957,7 +1995,7 @@ class ChangeTable extends React.Component {
                 </div>
                 <div className="row mt-4">
                   <div className="col-sm-6 text-center">
-                    <button className="btn btn-secondary">
+                    <button onClick={() => this.props.onClose()} className="btn btn-secondary">
                       ปิด
                     </button>
                   </div>
@@ -2143,7 +2181,7 @@ const ChangeTableConfirm = (props) => {
                 </button>
               </div>
               <div className="col-sm-6 text-center">
-                  <button className="btn btn-success">
+                  <button onClick={() => props.confirmTransfer()} className="btn btn-success">
                     ยืนยัน
                   </button>
               </div>
