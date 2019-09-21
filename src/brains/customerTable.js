@@ -144,9 +144,11 @@ export const transferOrders = ({
   orders,
   create_by,
   transferType,
-  oldTableId}, callback) => {
+  oldTableId,
+  newTable
+}, callback) => {
   const url = `${ serverIpAddress }api/restaurant/tables/customer-tables/transfer-orders`;
-  axios.post( url, {tableNumber, orders, create_by, oldTableId, transferType} ).then((response) => {
+  axios.post( url, {tableNumber, orders, create_by, oldTableId, transferType, newTable} ).then((response) => {
     if(response.status === 200){
       callback({
         status: true

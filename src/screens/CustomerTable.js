@@ -48,6 +48,9 @@ import {
 import { formatNumber } from './../helpers/utilities';
 
 
+import RegisterTablePopup from './../components/RegisterTable'
+
+
 var moment = require('moment');
 
 class CustomerTable extends React.Component {
@@ -468,13 +471,14 @@ class CustomerTable extends React.Component {
       }
     })
   }
-  submitTransfer = (tableNumber, orders, transferType) => {
+  submitTransfer = (tableNumber, orders, transferType, newTable) => {
     transferOrders({
       tableNumber,
       orders,
       transferType,
       create_by: this.props.user.id,
-      oldTableId: this.props.customerTable.id
+      oldTableId: this.props.customerTable.id,
+      newTable
     }, (response) => {
       this.setState({
         changeTable: {
@@ -835,6 +839,9 @@ class CustomerTable extends React.Component {
                                       {log.detail !== null
                                         ? `หมายเหตุ:${log.detail}`
                                         : ``}
+                                        {log.from_table !== null
+                                          ? `ย้ายมาจากโต๊ะ:${log.from_table}`
+                                          : ``}
                                     </td>
                                   );
                                   break;
@@ -881,7 +888,7 @@ class CustomerTable extends React.Component {
                                     </td>
                                   );
                                 default:
-                                  return <td valid="top" width="75%" />;
+                                  return ;
                               }
                             })()}
                           </tr>
@@ -1813,10 +1820,12 @@ class ChangeTable extends React.Component {
     this.state = {
       selectedTable: '',
       selectedTableId: null,
-      selectedOrderList: [],
+      selectedOrderList: this.props.orders,
       confirmSection: false,
       remainOrders:[],
-      tables: this.props.tables.filter(table => (table.number !== this.props.tableNumber))
+      tables: this.props.tables.filter(table => (table.number !== this.props.tableNumber)),
+      newTableShow: false,
+      newTable: ''
     }
     console.log(props.orders);
   }
@@ -1829,10 +1838,14 @@ class ChangeTable extends React.Component {
     borderRadius: '5px'
   }
   tableOnClick = (number, id) => {
-    this.setState({
+    if(id){
+      this.setState({
       selectedTable: number,
       selectedTableId: id
     })
+  }else{
+      this.registerTable(number);
+    }
   }
   addToList = (id, name, quantity) => {
     const current = this.state.selectedOrderList;
@@ -1895,7 +1908,27 @@ class ChangeTable extends React.Component {
     const newTableNumber = this.state.selectedTable;
     const transferOrders = this.state.selectedOrderList;
     const transferType = this.state.remainOrders.length === 0 ? 'full' : 'partial';
-    this.props.submitTransfer(newTableNumber, transferOrders, transferType);
+    const newTable = this.state.newTable;
+    this.props.submitTransfer(newTableNumber, transferOrders, transferType, newTable);
+  }
+  registerTable = (number) => {
+    this.setState({
+      newTableShow: !this.state.newTableShow,
+      selectedTable: number || ''
+    })
+  }
+  submitRegisterTable = ({zone, number_of_guest, language, tableNumber}) => {
+    console.log('Submit Rgsindsre', {zone, number_of_guest, language, tableNumber});
+    this.setState({
+    newTableShow : false,
+    selectedTable: tableNumber,
+    newTable : {
+      zone,
+      tableNumber,
+      number_of_guest,
+      language
+    }
+  })
   }
   render(){
     return(
@@ -1910,6 +1943,12 @@ class ChangeTable extends React.Component {
             confirmTransfer={this.confirmTransfer}
            />
         }
+        { this.state.newTableShow &&
+          <RegisterTablePopup
+          togglePopup={this.registerTable}
+          submitCreateTable={this.submitRegisterTable}
+          tableNumber={this.state.selectedTable}
+        />}
         <div className="paymentContent">
           <div className="container">
             <div className="row mt-3">
@@ -1962,7 +2001,7 @@ class ChangeTable extends React.Component {
                 </div>
                 <div className="row">
                   <div className="col-sm-12 text-center">
-                    <div class="container-fluid" style={{
+                    <div className="container-fluid" style={{
                       margin: '5px 0',
                       width: '100%',
                       height: '70px',
@@ -2025,7 +2064,7 @@ class OrderLineForTransfer extends React.Component{
     super(props);
     this.state = {
       quantity: props.quantity,
-      checked: false
+      checked: true
     }
   }
   onQuantityChange = (e) => {
