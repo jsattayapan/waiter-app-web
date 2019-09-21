@@ -1,7 +1,7 @@
 
 import  {serverIpAddress} from './../constanst';
 
-const axios = require('axios');
+const { axios } = require('./networking');
 
 export function login(number, passcode, callback){
   const url = `${ serverIpAddress }api/users/staffs/login`;

@@ -1,6 +1,6 @@
 import  {serverIpAddress} from './../constanst';
 
-const axios = require('axios');
+const { axios } = require('./networking');
 
 export const getTables = (callback) => {
   const url = `${ serverIpAddress }api/restaurant/tables/tables`;

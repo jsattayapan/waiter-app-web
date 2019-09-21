@@ -2,7 +2,7 @@ import { serverIpAddress } from './../constanst';
 import { store } from './../App';
 import { loadAllFoodItems, setSelectedFoodItems } from './../Redux/actions/foodItems';
 
-const axios = require('axios');
+const { axios } = require('./networking');
 
 export const getAllFoodItems = (callback) => {
   const url =`${ serverIpAddress }api/restaurant/items/menu-items`;

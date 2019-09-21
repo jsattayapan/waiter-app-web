@@ -3,7 +3,8 @@ export const setUser = ({
   name,
   short_name,
   position,
-  number
+  number,
+  token
  }) => ({
   type: 'SET_USER',
   id,
@@ -11,6 +12,7 @@ export const setUser = ({
   shortName: short_name,
   position,
   number,
+  token
 });
 
 export const clearUser = () => ({

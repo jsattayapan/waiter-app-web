@@ -8,9 +8,8 @@ import { TextInput } from '../components/TextInput';
 
 import { login } from '../brains/user';
 import { initialSocket } from '../brains/socket';
+import { setJwtToken } from '../brains/networking';
 
-
-import Speech from 'speak-tts'
 
 class LoginForm extends React.Component{
   state = {
@@ -45,6 +44,7 @@ class LoginForm extends React.Component{
       login( this.state.username, this.state.password, (userAuth) => {
         if(userAuth.status){
           initialSocket(userAuth.data.id);
+          setJwtToken(userAuth.data.token);
           this.props.onSubmit(userAuth.data);
         }else{
           this.setState(() => ({

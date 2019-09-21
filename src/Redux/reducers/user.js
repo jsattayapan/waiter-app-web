@@ -16,6 +16,7 @@ export default (state = userReducerDefaultState, action) => {
         shortName: action.shortName,
         position: action.position,
         number: action.number,
+        token: action.token
       };
     case 'UPDATE_USER':
       return {
