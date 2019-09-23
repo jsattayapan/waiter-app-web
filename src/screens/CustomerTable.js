@@ -56,7 +56,7 @@ var moment = require('moment');
 class CustomerTable extends React.Component {
 
   constructor(props) {
-    console.log(props.tables.allTables);
+    console.log(props.customerTable.logs);
     const allTables = [];
     props.tables.allTables.forEach((section) => {
        section.tables.forEach(table => {
