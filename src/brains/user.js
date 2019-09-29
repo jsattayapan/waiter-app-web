@@ -5,7 +5,7 @@ const { axios } = require('./networking');
 
 export function login(number, passcode, callback){
   const url = `${ serverIpAddress }api/users/staffs/login`;
-  axios.post(url, { number, passcode, platform: 'web-app' })
+  axios.post(url, { number, passcode, platform: 'web-app-cashier' })
     .then((res) => {
       callback({
         status: true,

@@ -1,8 +1,21 @@
 import React from 'react';
 import {TopBuffer} from './../helpers/utilities';
 import Logo from '../assets/jep_logo.png';
+import swal from 'sweetalert';
 
 export class HeaderBar extends React.Component{
+  changeShift = () => {
+    swal({
+      title: 'คุณต้องการบันทึกชิพรอบเช้า ?',
+  content: {
+    element: "input",
+    attributes: {
+      placeholder: "กรุณาใส่รหัส",
+      type: "password",
+    },
+  },
+});
+  }
 
   render(){
     return(
@@ -23,10 +36,21 @@ export class HeaderBar extends React.Component{
       }
           <div className="col-sm-5">
             <TopBuffer />
-            <button className='btn btn-danger' onClick={this.props.buttonFunction}
-              style={{marginTop:'10px'}}>{this.props.buttonLabel}</button>
-              <br /><br />
-              <p className="text-left" style={appBarStyle}>User: {this.props.name}</p>
+            <div className="row">
+              <div className="col-sm-6">
+                <button className='btn btn-danger' onClick={this.props.buttonFunction}
+                  style={{marginTop:'10px'}}>{this.props.buttonLabel}</button>
+                  <br /><br />
+                  <p className="text-left" style={appBarStyle}>User: {this.props.name}</p>
+              </div>
+              {this.props.buttonLabel === "ออกจากระบบ" &&
+              <div className="col-sm-6">
+                <button className='btn btn-info' onClick={() => this.changeShift()}
+                  style={{marginTop:'10px'}}>บันทึกรอบเช้า</button>
+              </div>
+            }
+            </div>
+
           </div>
         </div>
       </div>

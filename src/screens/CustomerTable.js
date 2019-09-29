@@ -803,9 +803,9 @@ class CustomerTable extends React.Component {
                   <table width="100%">
                     <thead>
                       <tr>
+                        <th width="75%">รายละเอียด</th>
                         <th width="15%">ส่งโดย</th>
                         <th width="10%">เวลา</th>
-                        <th width="77%">รายละเอียด</th>
                       </tr>
                     </thead>
                   </table>
@@ -822,49 +822,55 @@ class CustomerTable extends React.Component {
                       {this.props.customerTable.logs.map(log => (
                         <tbody>
                           <tr>
-                            <td valign="top" width="15%">
-                              {log.short_name}
-                            </td>
-                            <td valign="top" width="10%">
-                              {moment(log.timestamp).format('hh:mm')}
-                            </td>
                             {(() => {
                               switch (log.status) {
                                 case 'sent':
                                   return (
-                                    <td valid="top" width="75%">
-                                      สั่งอาหาร:<b>{log.name}</b> | จำนวน:<b>
-                                        {log.quantity}
-                                      </b>{' '}
-                                      {log.detail !== null
-                                        ? `หมายเหตุ:${log.detail}`
-                                        : ``}
-                                        {log.from_table !== null
-                                          ? `ย้ายมาจากโต๊ะ:${log.from_table}`
+                                    <div>
+                                      <td valign="top" width="15%">
+                                        สั่ง :
+                                      </td>
+                                      <td valid="top" width="60%">
+                                        <b>{log.name} x {log.quantity}
+                                        </b>{' '}
+                                        {log.detail !== null
+                                          ? `หมายเหตุ:${log.detail}`
                                           : ``}
-                                    </td>
+                                          {log.from_table !== null
+                                            ? `ย้ายมาจากโต๊ะ:${log.from_table}`
+                                            : ``}
+                                      </td>
+                                    </div>
                                   );
                                   break;
                                 case 'cancel':
                                   return (
-                                    <td valid="top" width="75%">
-                                      ยกเลิกอาหาร:<b>{log.name}</b> | จำนวน:<b>
-                                        {log.quantity}
-                                      </b>{' '}
-                                      {log.detail !== null
-                                        ? `หมายเหตุ:${log.detail}`
-                                        : ``}
-                                    </td>
+                                    <div>
+                                      <td valign="top" width="15%">
+                                        ยกเลิก :
+                                      </td>
+                                      <td valid="top" width="60%">
+                                        <b>{log.name} x {log.quantity}
+                                        </b>{' '}
+                                        {log.detail !== null
+                                          ? `หมายเหตุ:${log.detail}`
+                                          : ``}
+                                      </td>
+                                    </div>
+
                                   );
                                   break;
                                 case 'complete':
                                   return (
-                                    <td valid="top" width="75%">
-                                      พร้อมเสริฟอาหาร:<b>{log.name}</b>| จำนวน:<b
-                                      >
-                                        {log.quantity}
-                                      </b>
-                                    </td>
+                                    <div>
+                                      <td valign="top" width="15%">
+                                        ปรุงเสร็จ :
+                                      </td>
+                                      <td valid="top" width="60%">
+                                        <b>{log.name} x {log.quantity}
+                                        </b>
+                                      </td>
+                                    </div>
                                   );
                                   break;
                                 case 'opened':
@@ -881,6 +887,19 @@ class CustomerTable extends React.Component {
                                     </td>
                                   );
                                   break;
+                                  case 'transfer':
+                                    return (
+                                      <div>
+                                        <td valid="top" width="15%">
+                                          ย้าย :
+                                        </td>
+                                        <td valid="top" width="60%">
+                                          {log.detail}
+                                        </td>
+                                      </div>
+
+                                    );
+                                    break;
                                 case 'discount':
                                   return (
                                     <td valid="top" width="75%">
@@ -891,6 +910,12 @@ class CustomerTable extends React.Component {
                                   return ;
                               }
                             })()}
+                            <td valign="top" width="15%">
+                              {log.short_name}
+                            </td>
+                            <td valign="top" width="10%">
+                              {moment(log.timestamp).format('hh:mm')}
+                            </td>
                           </tr>
                         </tbody>
                       ))}
@@ -1820,12 +1845,13 @@ class ChangeTable extends React.Component {
     this.state = {
       selectedTable: '',
       selectedTableId: null,
-      selectedOrderList: this.props.orders,
+      selectedOrderList: [],
       confirmSection: false,
       remainOrders:[],
       tables: this.props.tables.filter(table => (table.number !== this.props.tableNumber)),
       newTableShow: false,
-      newTable: ''
+      newTable: '',
+      check: false
     }
     console.log(props.orders);
   }
@@ -1871,6 +1897,13 @@ class ChangeTable extends React.Component {
       selectedOrderList: current
     })
   }
+  nextButtonClickAll = () => {
+    this.setState({
+      selectedOrderList: this.props.orders
+    }, () => {
+      this.nextButtonClick();
+    });
+  }
   nextButtonClick = () => {
     var remainOrders = [];
     this.props.orders.forEach(order => {
@@ -1899,9 +1932,11 @@ class ChangeTable extends React.Component {
       remainOrders
     })
   }
-  backbutoon = () => {
+  backbutton = () => {
     this.setState({
+      check: false,
       confirmSection: false,
+      selectedOrderList: []
     })
   }
   confirmTransfer = () => {
@@ -1939,7 +1974,7 @@ class ChangeTable extends React.Component {
             remainOrders={this.state.remainOrders}
             selectedTable={this.state.selectedTable}
             selectedOrderList={this.state.selectedOrderList}
-            backButton={this.backbutoon}
+            backButton={this.backbutton}
             confirmTransfer={this.confirmTransfer}
            />
         }
@@ -1986,6 +2021,7 @@ class ChangeTable extends React.Component {
                               updateToList={this.updateToList}
                               addToList={this.addToList}
                               removeFromList={this.removeFromList}
+                              check={this.state.check}
                               key={index}
                              />
                           ))}
@@ -2033,12 +2069,12 @@ class ChangeTable extends React.Component {
                   </div>
                 </div>
                 <div className="row mt-4">
-                  <div className="col-sm-6 text-center">
+                  <div className="col-sm-4 text-center">
                     <button onClick={() => this.props.onClose()} className="btn btn-secondary">
                       ปิด
                     </button>
                   </div>
-                  <div className="col-sm-6 text-center">
+                  <div className="col-sm-4 text-center">
                     {
                       this.state.selectedTable !== '' &&
                       this.state.selectedOrderList.length !== 0 ?
@@ -2048,6 +2084,18 @@ class ChangeTable extends React.Component {
                       :
                       <button className="btn btn-success" disabled>
                         ถัดไป
+                      </button>
+                    }
+                  </div>
+                  <div className="col-sm-4 text-center">
+                    {
+                      this.state.selectedTable !== '' ?
+                      <button onClick={() => this.nextButtonClickAll()} className="btn btn-success">
+                        ย้ายทุกรายการ
+                      </button>
+                      :
+                      <button className="btn btn-success" disabled>
+                        ย้ายทุกรายการ
                       </button>
                     }
                   </div>
@@ -2064,7 +2112,7 @@ class OrderLineForTransfer extends React.Component{
     super(props);
     this.state = {
       quantity: props.quantity,
-      checked: true
+      checked: props.check
     }
   }
   onQuantityChange = (e) => {
