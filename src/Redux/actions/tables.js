@@ -10,3 +10,10 @@ export const setSectionTables = (tables) => {
     tables: tables
   }
 };
+
+export const setCurrentShift = (shift) => {
+  return {
+    type: 'SET_CURRENT_SHIFT',
+    currentShift: shift
+  }
+};

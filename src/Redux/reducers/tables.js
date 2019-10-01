@@ -1,6 +1,7 @@
 const tablesReducerDefaultState = {
   allTables: [],
-  sectionTables: []
+  sectionTables: [],
+  currentShift: {status: 'inactive'}
 };
 
 export default (state = tablesReducerDefaultState, action) => {
@@ -10,6 +11,11 @@ export default (state = tablesReducerDefaultState, action) => {
         ...state,
         allTables: action.tables
       }
+      case 'SET_CURRENT_SHIFT':
+        return {
+          ...state,
+          currentShift: action.currentShift
+        }
     case 'SET_SECTION_TABLES':
       return {
         ...state,

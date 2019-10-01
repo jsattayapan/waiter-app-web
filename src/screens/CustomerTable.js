@@ -56,7 +56,7 @@ var moment = require('moment');
 class CustomerTable extends React.Component {
 
   constructor(props) {
-    console.log(props.customerTable.logs);
+    console.log(props.customerTable);
     const allTables = [];
     props.tables.allTables.forEach((section) => {
        section.tables.forEach(table => {
@@ -957,6 +957,9 @@ class CustomerTable extends React.Component {
                     </button>
                   </div>
             }
+
+            {
+              this.props.customerTable.complimentary !== 1  ?
               <div className="col-sm-2">
                 {
                   this.props.customerTable.currentOrders &&
@@ -983,6 +986,12 @@ class CustomerTable extends React.Component {
                 }
 
               </div>
+              :
+              <div className="col-sm-2">
+
+              </div>
+            }
+
               <div className="col-sm-2">
                 {this.props.customerTable.currentOrders &&
                 this.props.customerTable.currentOrders.length !== 0 ? (
@@ -1013,25 +1022,32 @@ class CustomerTable extends React.Component {
                   </button>
                 )}
               </div>
-              <div className="col-sm-2">
-                {this.props.customerTable.status === 'checked' ? (
-                  <button title="รับเงิน" className="btn btn-info" onClick={() => this.paymentHandler()}>
-                    <span style={{fontSize: '25px'}}>
-                      <i className="fa fa-money" />
-                    </span>
-                  </button>
-                ) : (
-                  <button
-                    title="รับเงิน"
-                    className="btn btn-secondary"
-                    disabled
-                  >
-                    <span style={{fontSize: '25px'}}>
-                      <i className="fa fa-money" />
-                    </span>
-                  </button>
-                )}
-              </div>
+              {
+                this.props.customerTable.complimentary !== 1  ?
+                <div className="col-sm-2">
+                  {this.props.customerTable.status === 'checked' ? (
+                    <button title="รับเงิน" className="btn btn-info" onClick={() => this.paymentHandler()}>
+                      <span style={{fontSize: '25px'}}>
+                        <i className="fa fa-money" />
+                      </span>
+                    </button>
+                  ) : (
+                    <button
+                      title="รับเงิน"
+                      className="btn btn-secondary"
+                      disabled
+                    >
+                      <span style={{fontSize: '25px'}}>
+                        <i className="fa fa-money" />
+                      </span>
+                    </button>
+                  )}
+                </div> :
+                <div className="col-sm-2">
+
+                </div>
+              }
+
 
               <div className="col-sm-2">
                 {this.state.newOrderItems.length !== 0 ? (
@@ -2143,7 +2159,6 @@ class OrderLineForTransfer extends React.Component{
     }
   }
   onQuantityOutFocus = (e) => {
-    console.log('ourof cusot');
     const input = e.target.value
     if(!input){
       this.setState({

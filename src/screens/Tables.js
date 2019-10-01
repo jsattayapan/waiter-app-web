@@ -16,7 +16,7 @@ import {HeaderBar} from './../components/HeaderBar';
 import {TopBuffer} from '../helpers/utilities';
 import RegisterTablePopup from './../components/RegisterTable'
 
-import {getTables, isTableOnHold, updateTableStatus} from './../brains/tables';
+import {getTables, isTableOnHold, updateTableStatus, activeMorningShift, changeShift} from './../brains/tables';
 import {isAuth} from './../brains/authentication';
 import {
   getCurrentOrder,
@@ -25,6 +25,7 @@ import {
 } from './../brains/customerTable';
 import {logout} from '../brains/user';
 
+
 import './Tables.css';
 
 var moment = require('moment');
@@ -32,7 +33,6 @@ var moment = require('moment');
 class Tables extends React.Component {
   constructor(props) {
     super(props);
-    console.log(this.props.user);
     this.state = {
       currentTablePage: [],
       showPopup: false,
@@ -85,11 +85,24 @@ class Tables extends React.Component {
             });
           });
         } else {
-          this.setState({
-            isLoading: false
-          })
-          updateTableStatus(tableInfo.number, 'on_create', this.props.user.id);
-          this.togglePopup(tableInfo.number);
+          console.log('Tabble Info: ', tableInfo);
+          if(tableInfo.complimentary === 0){
+            this.setState({
+              isLoading: false
+            })
+            updateTableStatus(tableInfo.number, 'on_create', this.props.user.id);
+            this.togglePopup(tableInfo.number);
+          }else{
+            this.setState({
+              isLoading: false
+            });
+            this.submitCreateTable({
+              language: 'ไทย',
+              number_of_guest: 1,
+              tableNumber: tableInfo.number,
+              zone: 'B1'
+            });
+          }
         }
       } else {
         this.setState({
@@ -139,6 +152,38 @@ class Tables extends React.Component {
       });
     });
   };
+
+
+  activeMorningShift = () => {
+    activeMorningShift(this.props.user.id, (response) => {
+      if(!response.status){
+        swal({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: response.msg
+        });
+      }
+    });
+  };
+
+  changeShift = (passcode) => {
+    changeShift(this.props.user.id, passcode, this.props.tables.currentShift.period, (status, msg) => {
+      if(status){
+        swal({
+          icon: 'success',
+          title: 'สำเร็จ',
+          text: msg
+        });
+      }else{
+        swal({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: msg
+        });
+      }
+    });
+  }
+
   render() {
     return (
       <div className="container">
@@ -154,25 +199,40 @@ class Tables extends React.Component {
           name={this.props.user.name}
           buttonFunction={this.logoutButtonClick}
           buttonLabel="ออกจากระบบ"
+          activeMorningShift={this.activeMorningShift}
+          currentShift={this.props.tables.currentShift}
+          changeShift={this.changeShift}
         />
-        <div className="row">
-          <div className="col-sm-2" style={{background: '#ACC538'}}>
-            {this.props.tables.allTables.map((section, index) => (
-              <TableSection
-                label={section.section}
-                key={index}
-                onclick={this.changeTableSection}
-              />
-            ))}
-          </div>
-          <div className="col-sm-10">
-            <div className="row">
-              {this.props.tables.sectionTables.map((table, index) => (
-                <TableBox tableInfo={table} link={this.tableBoxClick} />
+        {
+          this.props.tables.currentShift.status === 'active' ?
+          <div className="row">
+            <div className="col-sm-2" style={{background: '#ACC538'}}>
+              {this.props.tables.allTables.map((section, index) => (
+                <TableSection
+                  label={section.section}
+                  key={index}
+                  onclick={this.changeTableSection}
+                  currentShift={this.props.tables.currentShift}
+                />
               ))}
             </div>
+            <div className="col-sm-10">
+              <div className="row">
+                {this.props.tables.sectionTables.map((table, index) => (
+                  <TableBox tableInfo={table} link={this.tableBoxClick} />
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
+          :
+          <div className="row" style={{marginTop:'300px'}}>
+            <div className="col-sm-12 text-center">
+              <h3>ยินดีต้อนรับสู่ระบบร้านอาหาร</h3>
+              <h5>กรุณากดปุ่ม "เปิดรอบเช้า" เพื่อเริ่ิมการทำงาน</h5>
+            </div>
+          </div>
+        }
+
       </div>
     );
   }

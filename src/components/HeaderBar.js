@@ -7,14 +7,30 @@ export class HeaderBar extends React.Component{
   changeShift = () => {
     swal({
       title: 'คุณต้องการบันทึกชิพรอบเช้า ?',
-  content: {
-    element: "input",
-    attributes: {
-      placeholder: "กรุณาใส่รหัส",
-      type: "password",
-    },
-  },
-});
+      content: {
+        element: "input",
+        attributes: {
+          placeholder: "กรุณาใส่รหัส",
+          type: "password",
+        },
+      },
+    }).then(data => {
+      this.props.changeShift(data);
+    });
+  }
+
+  activeMorningShift = () => {
+    swal({
+      title: 'คุณต้องการเปิดชิพรอบเช้า ?',
+      buttons: {
+        cancel: "ปิด",
+        confirm: "ยืนยัน",
+        }
+    }).then((data) => {
+      if(data){
+        this.props.activeMorningShift();
+      }
+    });
   }
 
   render(){
@@ -43,10 +59,26 @@ export class HeaderBar extends React.Component{
                   <br /><br />
                   <p className="text-left" style={appBarStyle}>User: {this.props.name}</p>
               </div>
-              {this.props.buttonLabel === "ออกจากระบบ" &&
+              {this.props.buttonLabel === "ออกจากระบบ" ? this.props.currentShift.status === "active" ?
+
+                this.props.currentShift.period === 'morning' ?
+                <div className="col-sm-6">
+                  <button className='btn btn-info' onClick={() => this.changeShift()}
+                    style={{marginTop:'10px'}}>บันทึกรอบเช้า</button>
+                </div>:
+                <div className="col-sm-6">
+                  <button className='btn btn-info' onClick={() => this.changeShift()}
+                    style={{marginTop:'10px'}}>บันทึกรอบเย็น</button>
+                </div>
+
+              :
               <div className="col-sm-6">
-                <button className='btn btn-info' onClick={() => this.changeShift()}
-                  style={{marginTop:'10px'}}>บันทึกรอบเช้า</button>
+                <button className='btn btn-info' onClick={() => this.activeMorningShift()}
+                  style={{marginTop:'10px'}}>เปิดรอบเช้า</button>
+              </div>
+              :
+              <div>
+
               </div>
             }
             </div>

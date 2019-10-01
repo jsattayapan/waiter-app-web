@@ -1,8 +1,8 @@
 import io from 'socket.io-client';
 import  { serverIpAddress } from './../constanst';
-import { getTables } from './tables';
+import { getTables, getCurrentShift } from './tables';
 import { store } from './../App';
-import { loadTables, setSectionTables } from './../Redux/actions/tables';
+import { loadTables, setSectionTables, setCurrentShift } from './../Redux/actions/tables';
 
 import { getTablesBySection } from './../Redux/selectors/tables';
 
@@ -18,4 +18,10 @@ export const initialSocket = (userId) => {
       ));
     });
   });
+
+  socket.on('shiftUpdate', () => {
+    getCurrentShift((status) => {
+      store.dispatch(setCurrentShift(status));
+    })
+  })
 }
