@@ -71,6 +71,20 @@ export const changeShift = (user_id, passcode, period, callback) => {
   });
 }
 
+export const getHistrotyTable = (callback) => {
+  var url = `${ serverIpAddress }api/restaurant/tables/tables/history-tables`;
+  axios.get(url).then((response) => {
+    var tables = response.data;
+    tables.tables.sort(function(a,b){
+      return new Date(b.close_at) - new Date(a.close_at);
+    });
+    callback(tables);
+  }).catch(error => {
+    console.log(error);
+    callback([]);
+  })
+}
+
 // export const createCustomerTable = ({
 //   table_number,
 //   number_of_guest,

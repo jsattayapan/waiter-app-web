@@ -17,3 +17,10 @@ export const setCurrentShift = (shift) => {
     currentShift: shift
   }
 };
+
+export const setHistoryTables = (tables) => {
+  return {
+    type: 'SET_HISTOTY_TABLES',
+    tables: tables
+  }
+};

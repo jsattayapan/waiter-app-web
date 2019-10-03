@@ -443,14 +443,15 @@ class CustomerTable extends React.Component {
   const {  payable,
     totalAmount,
     paymentType,
-    changeAmount} = payload;
+    roomNumber} = payload;
 
     completePayment({
       total_amount : payable,
       receive_amount: totalAmount,
       method: paymentType,
       table_id: this.props.customerTable.id,
-      user_id: this.props.user.id
+      user_id: this.props.user.id,
+      room_number: roomNumber
     }, () => {
       setTimeout(() => {
         this.existButtonHandler()
@@ -688,6 +689,7 @@ class CustomerTable extends React.Component {
                       {this.props.customerTable.currentOrders &&
                         this.props.customerTable.currentOrders.map(
                           (order, index) => (
+
                             <tbody>
                               <tr>
                                 <td width="10%" style={{textAlign: 'center'}}>
@@ -1657,9 +1659,15 @@ class Payment extends React.Component{
       totalAmount: 0,
       paymentType: 'cash',
       showChange: false,
-      changeAmount: 0
+      changeAmount: 0,
+      roomNumber: ''
     }
   }
+
+  setRoomNumber = (event) => {
+    this.setState({roomNumber: event.target.value.trim()})
+  }
+
   addAmount = (amount) => {
     if(this.state.paymentType === 'cash'){
       this.setState({
@@ -1789,8 +1797,8 @@ class Payment extends React.Component{
               </div>
             </div>
             <div className="row mt-4">
-              <div className="col-sm-6 text-center">
-                <label style={{width: '80%'}}>
+              <div className="col-sm-4 text-center">
+                <label style={{width: '100%'}}>
                   <input type="radio" name="paymentType"
                     checked={this.state.paymentType === 'cash'}
                     onClick={() => this.changePaymentType('cash')}
@@ -1800,8 +1808,19 @@ class Payment extends React.Component{
                    </div>
                 </label>
               </div>
-              <div className="col-sm-6 text-center">
-                <label style={{width: '80%'}}>
+              <div className="col-sm-4 text-center">
+                <label style={{width: '100%'}}>
+                  <input type="radio" name="paymentType"
+                    checked={this.state.paymentType === 'room'}
+                    onClick={() => this.changePaymentType('room')}
+                  />
+                   <div style={this.paymentTypeStyle}>
+                     ใส่ในบัญชีห้องพัก
+                   </div>
+                </label>
+              </div>
+              <div className="col-sm-4 text-center">
+                <label style={{width: '100%'}}>
                   <input type="radio" name="paymentType"
                     checked={this.state.paymentType === 'card'}
                     onClick={() => this.changePaymentType('card')}
@@ -1812,12 +1831,26 @@ class Payment extends React.Component{
                 </label>
               </div>
             </div>
+            { this.state.paymentType === 'room'? <div className="row mt-4">
+              <div className="col-sm-3">
+              </div>
+              <div className="col-sm-6">
+                <div class="input-group mb-3 center-block">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text" >ห้องพัก #</span>
+                    </div>
+                    <input type="text" class="form-control" onChange={this.setRoomNumber} value={this.state.roomNumber} placeholder="Eg. 1023" />
+                  </div>
+              </div>
+              <div className="col-sm-3">
+              </div>
+            </div> : ''}
             <div className="row mt-4">
               <div className="col-sm-6 text-center">
                 <button onClick={() => this.props.onClose()} className="btn btn-secondary">ปิด</button>
               </div>
               <div className="col-sm-6 text-center">
-                {this.state.totalAmount >= this.state.payable || this.state.paymentType === 'card'?
+                {this.state.totalAmount >= this.state.payable || this.state.paymentType === 'card' || (this.state.paymentType === 'room' && this.state.roomNumber !== '') ?
                 <button onClick={() => this.paymentSubmit()} className="btn btn-success">ยืนยัน</button>
               : <button className="btn btn-success" disabled>ยืนยัน</button>}
               </div>

@@ -1,7 +1,8 @@
 const tablesReducerDefaultState = {
   allTables: [],
   sectionTables: [],
-  currentShift: {status: 'inactive'}
+  currentShift: {status: 'inactive'},
+  historyTables: []
 };
 
 export default (state = tablesReducerDefaultState, action) => {
@@ -20,6 +21,11 @@ export default (state = tablesReducerDefaultState, action) => {
       return {
         ...state,
         sectionTables: action.tables
+      }
+    case 'SET_HISTOTY_TABLES':
+      return {
+        ...state,
+        historyTables: action.tables
       }
     default:
       return state;

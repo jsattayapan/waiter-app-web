@@ -10,7 +10,7 @@ export class HeaderBar extends React.Component{
       content: {
         element: "input",
         attributes: {
-          placeholder: "กรุณาใส่รหัส",
+          placeholder: "กรุณาใส่รหัสเพื่อยืนยัน",
           type: "password",
         },
       },
@@ -33,13 +33,27 @@ export class HeaderBar extends React.Component{
     });
   }
 
+  resetTableNUser = () => {
+      swal({
+        title: 'คุณต้องการ Reset สถานะโต๊ะและผู้ใช้ ?',
+        content: {
+          element: "input",
+          attributes: {
+            placeholder: "กรุณาใส่รหัสเพื่อยืนยัน",
+            type: "password",
+          },
+        },
+      }).then(data => {
+        this.props.resetTableNUser(data);
+      });
+  }
+
   render(){
     return(
       <div>
         <div className="row" style={headerStyle}>
-          <div className="col-sm-2">
+          <div className="col-sm-2 mt-3">
             <img className="ml-4" height="100px" alt="Jep's Logo" src={Logo}/>
-            <p>Jep's Restaurant POS</p>
           </div>
           {this.props.info !== undefined ?
             <div className="col-sm-5">
@@ -59,22 +73,24 @@ export class HeaderBar extends React.Component{
                   <br /><br />
                   <p className="text-left" style={appBarStyle}>User: {this.props.name}</p>
               </div>
-              {this.props.buttonLabel === "ออกจากระบบ" ? this.props.currentShift.status === "active" ?
+              {this.props.buttonLabel === "ออกจากระบบ" ?
 
-                this.props.currentShift.period === 'morning' ?
-                <div className="col-sm-6">
-                  <button className='btn btn-info' onClick={() => this.changeShift()}
-                    style={{marginTop:'10px'}}>บันทึกรอบเช้า</button>
-                </div>:
-                <div className="col-sm-6">
-                  <button className='btn btn-info' onClick={() => this.changeShift()}
-                    style={{marginTop:'10px'}}>บันทึกรอบเย็น</button>
-                </div>
-
-              :
               <div className="col-sm-6">
-                <button className='btn btn-info' onClick={() => this.activeMorningShift()}
-                  style={{marginTop:'10px'}}>เปิดรอบเช้า</button>
+                  {
+                    this.props.currentShift.status === "active" ?
+
+                    this.props.currentShift.period === 'morning' ?
+                      <button className='btn btn-info' onClick={() => this.changeShift()}
+                        style={{marginTop:'10px'}}>บันทึกรอบเช้า</button>:
+                      <button className='btn btn-info' onClick={() => this.changeShift()}
+                        style={{marginTop:'10px'}}>บันทึกรอบเย็น</button>
+
+                  :
+                    <button className='btn btn-info' onClick={() => this.activeMorningShift()}
+                      style={{marginTop:'10px'}}>เปิดรอบเช้า</button>
+                    }<br />
+                    <button className='btn btn-warning' onClick={() => this.resetTableNUser()}
+                      style={{marginTop:'10px'}}>Reset สถานะโต๊ะและผู้ใช้</button>
               </div>
               :
               <div>

@@ -5,7 +5,11 @@ const { axios } = require('./networking');
 export const getCurrentOrder = (id, callback) => {
   const url = `${ serverIpAddress }api/restaurant/tables/item-orders/${id}`;
   axios.get(url).then((response) => {
-    callback(response.data);
+    var orders = response.data;
+    orders.sort(function(a,b){
+      return new Date(a.createAt) - new Date(b.createAt);
+    });
+    callback(orders);
   });
 }
 
@@ -67,7 +71,6 @@ export const getTableLogs = (table_id, callback) => {
       logs.sort(function(a,b){
         return new Date(a.timestamp) - new Date(b.timestamp);
       });
-      console.log(logs);
       callback(logs);
     });
   });
@@ -119,7 +122,8 @@ export const completePayment = ({
   receive_amount,
   method,
   table_id,
-  user_id
+  user_id,
+  room_number
 }, callback) => {
 
   const receive_total_amount = method === 'cash' ? receive_amount : total_amount;
@@ -129,7 +133,8 @@ export const completePayment = ({
   receive_amount: receive_total_amount,
   method,
   table_id,
-  user_id}).then(data => {
+  user_id,
+room_number}).then(data => {
     if(data.status === 200){
       callback();
     }else{

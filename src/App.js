@@ -7,6 +7,7 @@ import Tables from './screens/Tables';
 import CustomerTable from './screens/CustomerTable';
 import {Playground} from './screens/Playground';
 import LoginPage from './screens/LoginPage';
+import TableHistory from './screens/tableHistory';
 
 import configureStore from './Redux/store/configureStore';
 
@@ -20,6 +21,7 @@ const jsx = (
       <Route path="/tables" exact component={Tables} />
       <Route path="/customer-table" exact component={CustomerTable} />
       <Route path="/playground" exact component={Playground} />
+      <Route path="/tables-history" exact component={TableHistory} />
     </Router>
   </Provider>
 );
