@@ -63,7 +63,6 @@ class CustomerTable extends React.Component {
          allTables.push(table);
       })
     })
-    console.log(allTables);
     super(props);
     getAllFoodItems(foodItems => {
       props.dispatch(loadAllFoodItems(foodItems));
@@ -453,9 +452,13 @@ class CustomerTable extends React.Component {
       user_id: this.props.user.id,
       room_number: roomNumber
     }, () => {
-      setTimeout(() => {
+      if(paymentType === 'cash'){
+        setTimeout(() => {
+          this.existButtonHandler()
+        }, 3000);
+      }else{
         this.existButtonHandler()
-      }, 3000);
+      }
     })
   }
   onChangeTableClick = () => {
@@ -599,7 +602,7 @@ class CustomerTable extends React.Component {
                               {sub_cat.items.map(item => (
                                 <MenuItemBox
                                   label={item.name}
-                                  price={item.price}
+                                  price={ this.props.customerTable.outlet === 'staff' ? item.staff_price : item.price}
                                   code={item.code}
                                   onClick={this.addNewItem}
                                 />
@@ -961,7 +964,7 @@ class CustomerTable extends React.Component {
             }
 
             {
-              this.props.customerTable.complimentary !== 1  ?
+              this.props.customerTable.outlet === 'customer'  ?
               <div className="col-sm-2">
                 {
                   this.props.customerTable.currentOrders &&
@@ -1025,8 +1028,9 @@ class CustomerTable extends React.Component {
                 )}
               </div>
               {
-                this.props.customerTable.complimentary !== 1  ?
+                this.props.customerTable.outlet !== 'vip'  ?
                 <div className="col-sm-2">
+                  {console.log('VIP',this.props.customerTable)}
                   {this.props.customerTable.status === 'checked' ? (
                     <button title="รับเงิน" className="btn btn-info" onClick={() => this.paymentHandler()}>
                       <span style={{fontSize: '25px'}}>
@@ -1897,7 +1901,7 @@ class ChangeTable extends React.Component {
       selectedOrderList: [],
       confirmSection: false,
       remainOrders:[],
-      tables: this.props.tables.filter(table => (table.number !== this.props.tableNumber)),
+      tables: this.props.tables.filter(table => (table.number !== this.props.tableNumber)).filter( table => (table.outlet !== 'staff')),
       newTableShow: false,
       newTable: '',
       check: false

@@ -91,7 +91,7 @@ class Tables extends React.Component {
           });
         } else {
           console.log('Tabble Info: ', tableInfo);
-          if(tableInfo.complimentary === 0){
+          if(tableInfo.outlet === 'customer'){
             this.setState({
               isLoading: false
             })
@@ -190,21 +190,23 @@ class Tables extends React.Component {
   }
 
   resetTableNUser = (passcode) => {
-    resetTableNUser(this.props.user.id, passcode, (status, msg) => {
-      if(status){
-        swal({
-          icon: 'success',
-          title: 'สำเร็จ',
-          text: msg
-        });
-      }else{
-        swal({
-          icon: 'error',
-          title: 'เกิดข้อผิดพลาด',
-          text: msg
-        });
-      }
-    });
+    if(passcode !== null){
+      resetTableNUser(this.props.user.id, passcode, (status, msg) => {
+        if(status){
+          swal({
+            icon: 'success',
+            title: 'สำเร็จ',
+            text: msg
+          });
+        }else{
+          swal({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: msg
+          });
+        }
+      });
+    }
   }
 
   linkToHistoryPage = () => {
@@ -215,7 +217,7 @@ class Tables extends React.Component {
 
   render() {
     return (
-      <div className="container">
+      <div className="container" style={{background: '#ededed'}}>
         { this.state.isLoading && <LoadingScreen /> }
         {this.state.showPopup && (
           <RegisterTablePopup
@@ -260,7 +262,7 @@ class Tables extends React.Component {
                 />
               ))}
             </div>
-            <div className="col-sm-10">
+            <div className="col-sm-10" >
               <div className="row">
                 {this.props.tables.sectionTables.map((table, index) => (
                   <TableBox tableInfo={table} link={this.tableBoxClick} />
@@ -301,6 +303,10 @@ class Tables extends React.Component {
                     language={table.language}
                     open_at={table.open_at}
                     close_at={table.close_at}
+                    discount_type={table.discount_type}
+                    discount_amount={table.discount_amount}
+                    discount_section={table.discount_section}
+                    discount_remark={table.discount_remark}
                   />
                 ))
               }
@@ -347,7 +353,7 @@ class HistroyTableLine extends React.Component{
       <table class="table table-hover mt-0">
         <tbody>
         <tr onClick={() => this.showOrders()}>
-          <td style={{textAlign: 'left', width: '10%'}} >{this.props.table_number}</td>
+          <td style={{textAlign: 'left', width: '10%'}} ><b>{this.props.table_number}</b></td>
           <td style={{textAlign: 'right', width: '10%'}} >{formatNumber(this.props.total_amount)}.-</td>
           <td style={{textAlign: 'center', width: '20%'}} >{this.props.method === 'cash' ? 'เงินสด' :
               this.props.method === 'card' ? 'บัตร' :
@@ -367,11 +373,25 @@ class HistroyTableLine extends React.Component{
             <tbody>
           <tr>
           <td colSpan='9'>
-            <div className='text-left pl-4'>
-              <p><b>รายการอาหาร:</b></p>
-              {this.props.orders.map(order => (
-                <p>{order.quantity} x {order.name}</p>
-              ))}
+            <div className="row">
+              <div className='text-left col-sm-6 pl-4'>
+                <p><b>รายการอาหาร:</b></p>
+                {this.props.orders.map(order => (
+                  <p>{order.quantity} x {order.name}</p>
+                ))}
+              </div>
+              <div className='text-left col-sm-6 pl-4'>
+                <p><b>ส่วนลด: </b>
+                {
+                  this.props.discount_type !== null?
+                   this.props.discount_type === 'percentage' ?
+                   `${this.props.discount_amount}% ${this.props.discount_section === 'f&b' ? 'อาหารและเครื่องดื่ม' :this.props.discount_section === 'b' ? 'เฉพาะเครื่องดื่ม' : 'เฉพาะอาหาร'}`:
+                   this.props.discount_type === 'amount' ? `มูลค่า${this.props.discount_amount} บาท`
+                : 'โต๊ะ complimentary'
+                : '-'}
+              </p>
+              {this.props.discount_type === 'complimentary' && <p><b>หมายเหตู: </b>{this.props.discount_remark}</p>}
+              </div>
             </div>
           </td>
         </tr>
@@ -409,7 +429,7 @@ const TableBox = props => {
     background:
       props.tableInfo.status === 'opened'
         ? '#5291ff'
-        : props.tableInfo.status === 'checked' ? '#C82333' : '#C6E0F2'
+        : props.tableInfo.status === 'checked' ? '#C82333' : '#30c7ff'
   };
   const time = moment(props.tableInfo.timestamp);
   return (

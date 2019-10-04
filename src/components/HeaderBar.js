@@ -101,6 +101,7 @@ export class HeaderBar extends React.Component{
 
           </div>
         </div>
+        
       </div>
     )
   }
