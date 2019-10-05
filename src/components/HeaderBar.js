@@ -51,7 +51,7 @@ export class HeaderBar extends React.Component{
   render(){
     return(
       <div>
-        <div className="row" style={headerStyle}>
+        <div className="row fixed-content" style={headerStyle}>
           <div className="col-sm-2 mt-3">
             <img className="ml-4" height="100px" alt="Jep's Logo" src={Logo}/>
           </div>
@@ -101,7 +101,7 @@ export class HeaderBar extends React.Component{
 
           </div>
         </div>
-        
+
       </div>
     )
   }

@@ -499,7 +499,7 @@ class CustomerTable extends React.Component {
   }
   render() {
     return (
-      <div className="container">
+      <div className="container-fluid">
         {this.state.discount.show && (
           <DiscountOption
             onClose={this.onDiscountClose}
@@ -560,7 +560,7 @@ class CustomerTable extends React.Component {
           />
         )}
 
-        <div className="row mt-3">
+        <div className="row mt-3 fixed-content">
           <div className="col-sm-2" style={menuSectionStyle}>
             {this.props.foodItems.allFoodItems.map(cat => (
               <div className="row my-3">

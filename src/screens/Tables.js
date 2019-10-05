@@ -38,7 +38,8 @@ class Tables extends React.Component {
     this.state = {
       currentTablePage: [],
       showPopup: false,
-      isLoading: false
+      isLoading: false,
+      selectedSection: '###'
     };
     //AUTHENTICATION
     isAuth(this.props.user.id, data => {
@@ -128,6 +129,9 @@ class Tables extends React.Component {
     this.props.history.push('/');
   };
   changeTableSection = section => {
+    this.setState({
+      selectedSection: section
+    });
     const result = getTablesBySection(this.props.tables.allTables, section);
     if (result !== this.props.tables.sectionTables) {
       this.props.dispatch(setSectionTables(result));
@@ -217,7 +221,7 @@ class Tables extends React.Component {
 
   render() {
     return (
-      <div className="container" style={{background: '#ededed'}}>
+      <div className="container-fluid" >
         { this.state.isLoading && <LoadingScreen /> }
         {this.state.showPopup && (
           <RegisterTablePopup
@@ -236,13 +240,13 @@ class Tables extends React.Component {
           resetTableNUser={this.resetTableNUser}
         />
         {this.props.tables.currentShift.status === 'active'?
-          <div className="row">
+          <div className="row fixed-content" style={{background: 'black'}}>
             { !this.state.showHistory ?
               <div className="col-sm-12 text-right">
-                <button className="btn btn-link" onClick={() => this.linkToHistoryPage()}>โต๊ะที่รับเงินแล้ว</button>
+                <button style={{color: 'white'}} className="btn btn-link" onClick={() => this.linkToHistoryPage()}>โต๊ะที่รับเงินแล้ว</button>
               </div>:
               <div className="col-sm-12 text-right">
-                <button className="btn btn-link" onClick={() => this.linkToHistoryPage()}>โต๊ะปัจจุบัน</button>
+                <button style={{color: 'white'}} className="btn btn-link" onClick={() => this.linkToHistoryPage()}>โต๊ะปัจจุบัน</button>
               </div>
             }
           </div>:
@@ -251,18 +255,19 @@ class Tables extends React.Component {
         {
           this.props.tables.currentShift.status === 'active' ?
           !this.state.showHistory ?
-          <div className="row">
-            <div className="col-sm-2" style={{background: '#ACC538'}}>
+          <div className="row fixed-content">
+            <div className="col-sm-2">
               {this.props.tables.allTables.map((section, index) => (
                 <TableSection
                   label={section.section}
                   key={index}
                   onclick={this.changeTableSection}
                   currentShift={this.props.tables.currentShift}
+                  selectedSection={this.state.selectedSection}
                 />
               ))}
             </div>
-            <div className="col-sm-10" >
+            <div className="col-sm-10" style={{background: '#36B6DB'}}>
               <div className="row">
                 {this.props.tables.sectionTables.map((table, index) => (
                   <TableBox tableInfo={table} link={this.tableBoxClick} />
@@ -270,11 +275,11 @@ class Tables extends React.Component {
               </div>
             </div>
           </div>:
-          <div className="row">
-            <div className="col-sm-12">
+          <div className="row mt-4" fixed-content>
+            <div className="col-sm-12 text-center">
               <h4>โต๊ะที่รับเงินแล้ว</h4>
             </div>
-            <div className="co-sm-12 ">
+            <div className="co-sm-12 mx-auto">
               <table className="table table-hover" style={{width: '1200px'}}>
                 {console.log(this.props.tables.historyTables)}
                 <thead>
@@ -307,6 +312,7 @@ class Tables extends React.Component {
                     discount_amount={table.discount_amount}
                     discount_section={table.discount_section}
                     discount_remark={table.discount_remark}
+                    room_number={table.room_number}
                   />
                 ))
               }
@@ -381,6 +387,7 @@ class HistroyTableLine extends React.Component{
                 ))}
               </div>
               <div className='text-left col-sm-6 pl-4'>
+                {this.props.method === "room" && <p><b>หมายเลขห้องพัก: </b>{this.props.room_number}</p> }
                 <p><b>ส่วนลด: </b>
                 {
                   this.props.discount_type !== null?
@@ -406,18 +413,22 @@ class HistroyTableLine extends React.Component{
 class TableSection extends React.Component {
   render() {
     const style = {
-      margin: '10px',
+      margin: '0px -30px 0px 100px',
       cursor: 'pointer',
-      background: '#fff'
+      background: this.props.selectedSection === this.props.label ? '#36B6DB' : 'white',
+      borderRadius: '5px',
+      border: '2px solid #36B6DB',
+      height: '80px',
+      color: this.props.selectedSection === this.props.label ? 'white' : 'black'
     };
     return (
       <div
-        className="row"
+        className="row tableSection"
         style={style}
         onClick={() => this.props.onclick(this.props.label)}
       >
         <div className="col-sm-12 text-center">
-          <h4>{this.props.label}</h4>
+          <h4 className="mt-4">{this.props.label}</h4>
         </div>
       </div>
     );
@@ -429,7 +440,7 @@ const TableBox = props => {
     background:
       props.tableInfo.status === 'opened'
         ? '#5291ff'
-        : props.tableInfo.status === 'checked' ? '#C82333' : '#30c7ff'
+        : props.tableInfo.status === 'checked' ? '#C82333' : 'white'
   };
   const time = moment(props.tableInfo.timestamp);
   return (

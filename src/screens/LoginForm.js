@@ -2,7 +2,7 @@ import React from 'react';
 
 import './Login.css';
 import { TopBuffer } from '../helpers/utilities';
-import Logo from '../assets/logo.png';
+import Logo from '../assets/jep_logo.png';
 import LoadingScreen from '../components/LoadingScreen'
 import { TextInput } from '../components/TextInput';
 
@@ -64,7 +64,7 @@ class LoginForm extends React.Component{
         { this.state.isLoading && <LoadingScreen /> }
           <div className="col-8 mx-auto">
             <TopBuffer />
-            <div className="row justify-content-center"><img alt="Jep's Logo" src={Logo}/></div>
+            <div className="row justify-content-center"><img alt="Jep's Logo" src={Logo} width='300px'/></div>
             <TopBuffer />
             {this.state.error && <p style={{color:'red'}}>{this.state.error}</p>}
             <form onSubmit={this.verifyLogin}>
