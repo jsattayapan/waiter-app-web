@@ -10,13 +10,17 @@ import {
   setCurrentOrders,
   setTableLogs
 } from './../Redux/actions/customerTable';
+import {loadCookingFoodItems, loadCompleteFoodItems} from './../Redux/actions/foodItems';
+import {getCookingFoods, getCompleteFoods} from './../brains/foodItems';
+
+
 import {getTablesBySection} from './../Redux/selectors/tables';
 import LoadingScreen from '../components/LoadingScreen';
 import {HeaderBar} from './../components/HeaderBar';
 import {TopBuffer} from '../helpers/utilities';
 import RegisterTablePopup from './../components/RegisterTable'
 
-import {getTables, isTableOnHold, updateTableStatus, activeMorningShift, changeShift, getHistrotyTable} from './../brains/tables';
+import {getTables, isTableOnHold, updateTableStatus, activeMorningShift, changeShift, getHistrotyTable, submitRefund} from './../brains/tables';
 import {isAuth} from './../brains/authentication';
 import {
   getCurrentOrder,
@@ -175,6 +179,21 @@ class Tables extends React.Component {
     });
   };
 
+  dailyReportPage = () => {
+    this.props.history.push('/daily-total-items');
+  }
+
+  checkerPage = () => {
+
+    getCookingFoods(data => {
+      this.props.dispatch(loadCookingFoodItems(data));
+      getCompleteFoods(data => {
+        this.props.dispatch(loadCompleteFoodItems(data));
+        this.props.history.push('/checker');
+      })
+    })
+  }
+
   changeShift = (passcode) => {
     changeShift(this.props.user.id, passcode, this.props.tables.currentShift.period, (status, msg) => {
       if(status){
@@ -219,6 +238,24 @@ class Tables extends React.Component {
     })
   }
 
+  submitRefund = ({amount, remark, table_id}) => {
+    submitRefund({amount, remark, table_id, user_id: this.props.user.id}, (status, msg) => {
+      if(status){
+        swal({
+          icon: 'success',
+          title: 'สำเร็จ',
+          text: msg
+        });
+      }else{
+        swal({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: msg
+        });
+      }
+    })
+  }
+
   render() {
     return (
       <div className="container-fluid" >
@@ -238,6 +275,8 @@ class Tables extends React.Component {
           currentShift={this.props.tables.currentShift}
           changeShift={this.changeShift}
           resetTableNUser={this.resetTableNUser}
+          dailyReportPage={this.dailyReportPage}
+          checkerPage={this.checkerPage}
         />
         {this.props.tables.currentShift.status === 'active'?
           <div className="row fixed-content" style={{background: 'black'}}>
@@ -286,7 +325,8 @@ class Tables extends React.Component {
                     <tr>
                       <th style={{ width: '10%', textAlign: 'left'}}>โต๊ะ</th>
                       <th style={{ width: '10%', textAlign: 'right'}}>ยอดชำระ</th>
-                      <th style={{ width: '12%', textAlign: 'center'}}>จ่ายโดย</th>
+                      <th style={{ width: '10%', textAlign: 'right'}}>คืนเงิน</th>
+                      <th style={{ width: '20%', textAlign: 'center'}}>จ่ายโดย</th>
                       <th style={{ width: '10%', textAlign: 'center'}}>จำนวนลูกค้า</th>
                       <th style={{ width: '10%', textAlign: 'center'}}>ภาษา</th>
                       <th style={{ width: '10%', textAlign: 'center'}}>เปิดโต๊ะโดย</th>
@@ -313,6 +353,8 @@ class Tables extends React.Component {
                     discount_section={table.discount_section}
                     discount_remark={table.discount_remark}
                     room_number={table.room_number}
+                    submitRefund={this.submitRefund}
+                    refund_amount={table.refund_amount}
                   />
                 ))
               }
@@ -335,7 +377,8 @@ class Tables extends React.Component {
 const mapStateToprops = state => {
   return {
     user: state.user,
-    tables: state.tables
+    tables: state.tables,
+    foodItems: state.foodItems
   };
 };
 
@@ -345,14 +388,55 @@ class HistroyTableLine extends React.Component{
   constructor(props){
     super(props);
     this.state = {
-      showOrders: false
+      showOrders: false,
+      showRefund: false,
+      amount: '',
+      remark: ''
     }
   }
   showOrders = () => {
     this.setState({
       showOrders: !this.state.showOrders
     });
+    if(this.state.showOrders){
+      this.setState({showRefund: false});
+    }
   }
+
+  amountOnChange = (e) => {
+    const input = e.target.value;
+    var isMatch = parseInt(input) <= (this.props.total_amount-this.props.refund_amount) && parseInt(input) > 0 ? true : false;
+    console.log(input);
+    if(!input || isMatch){
+      this.setState({
+        amount: input
+      })
+    }
+  }
+
+  submitRefund = () => {
+    if(this.state.remark){
+    this.props.submitRefund({
+      amount: this.state.amount,
+      remark: this.state.remark,
+      table_id: this.props.id
+    });
+    this.setState({
+      showOrders: false,
+      showRefund: false,
+      amount: '',
+      remark: ''
+    });
+    }
+  }
+
+  remarkOnChange = (e) => {
+    const input = e.target.value.trim();
+    this.setState({
+      remark: input
+    });
+  }
+
   render(){
     return(
 <div style={{marginTop:'-15px'}}>
@@ -361,6 +445,7 @@ class HistroyTableLine extends React.Component{
         <tr onClick={() => this.showOrders()}>
           <td style={{textAlign: 'left', width: '10%'}} ><b>{this.props.table_number}</b></td>
           <td style={{textAlign: 'right', width: '10%'}} >{formatNumber(this.props.total_amount)}.-</td>
+          <td style={{textAlign: 'right', width: '10%'}} >{this.props.refund_amount ? formatNumber(this.props.refund_amount) : '0'}.-</td>
           <td style={{textAlign: 'center', width: '20%'}} >{this.props.method === 'cash' ? 'เงินสด' :
               this.props.method === 'card' ? 'บัตร' :
               this.props.method === 'room' ? 'ย้ายเข้าบัญชีห้องพัก' :
@@ -380,13 +465,13 @@ class HistroyTableLine extends React.Component{
           <tr>
           <td colSpan='9'>
             <div className="row">
-              <div className='text-left col-sm-6 pl-4'>
+              <div className='text-left col-sm-5 pl-4'>
                 <p><b>รายการอาหาร:</b></p>
                 {this.props.orders.map(order => (
                   <p>{order.quantity} x {order.name}</p>
                 ))}
               </div>
-              <div className='text-left col-sm-6 pl-4'>
+              <div className='text-left col-sm-4 pl-4'>
                 {this.props.method === "room" && <p><b>หมายเลขห้องพัก: </b>{this.props.room_number}</p> }
                 <p><b>ส่วนลด: </b>
                 {
@@ -398,6 +483,25 @@ class HistroyTableLine extends React.Component{
                 : '-'}
               </p>
               {this.props.discount_type === 'complimentary' && <p><b>หมายเหตู: </b>{this.props.discount_remark}</p>}
+              </div>
+              <div className='text-left col-sm-3 pl-4'>
+                <button className="btn btn-link" onClick={() => {this.setState({showRefund: !this.state.showRefund})}}>คืนเงิน</button>
+                {this.state.showRefund &&
+                  <div>
+                    <div class="input-group mb-3">
+                      <div className="input-group-prepend">
+                        <span className="input-group-text" >หมายเหตุ</span>
+                      </div>
+                      <input type="text" className="form-control" value={this.state.remark} onChange={this.remarkOnChange} />
+                    </div>
+                    <div class="input-group mb-3">
+                    <div className="input-group-prepend">
+                      <span className="input-group-text" >จำนวนเงิน</span>
+                    </div>
+                    <input type="text" value={this.state.amount} className="form-control" onChange={this.amountOnChange} />
+                  </div>
+                  <button onClick={() => this.submitRefund()} className="btn btn-danger">ยืนยัน</button>
+                  </div>}
               </div>
             </div>
           </td>

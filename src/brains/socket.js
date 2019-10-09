@@ -1,10 +1,13 @@
 import io from 'socket.io-client';
 import  { serverIpAddress } from './../constanst';
-import { getTables, getCurrentShift } from './tables';
+import { getTables, getCurrentShift, getHistrotyTable } from './tables';
 import { store } from './../App';
-import { loadTables, setSectionTables, setCurrentShift } from './../Redux/actions/tables';
+import { loadTables, setSectionTables, setCurrentShift, setHistoryTables } from './../Redux/actions/tables';
 
 import { getTablesBySection } from './../Redux/selectors/tables';
+
+import {loadCookingFoodItems, loadCompleteFoodItems} from './../Redux/actions/foodItems';
+import {getCookingFoods, getCompleteFoods} from './foodItems';
 
 export const initialSocket = (userId) => {
   const socket = io.connect(serverIpAddress);
@@ -22,6 +25,21 @@ export const initialSocket = (userId) => {
   socket.on('shiftUpdate', () => {
     getCurrentShift((status) => {
       store.dispatch(setCurrentShift(status));
+    })
+  })
+
+  socket.on('historyTablesUpdate', () => {
+    getHistrotyTable(tables => {
+      store.dispatch(setHistoryTables(tables))
+    })
+  })
+
+  socket.on('updateOrders',() => {
+    getCookingFoods(data => {
+      store.dispatch(loadCookingFoodItems(data));
+      getCompleteFoods(data => {
+        store.dispatch(loadCompleteFoodItems(data));
+      })
     })
   })
 }

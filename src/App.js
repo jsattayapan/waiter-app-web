@@ -8,6 +8,8 @@ import CustomerTable from './screens/CustomerTable';
 import {Playground} from './screens/Playground';
 import LoginPage from './screens/LoginPage';
 import TableHistory from './screens/tableHistory';
+import DailyTotalItems from './screens/DailyTotalItems';
+import Checker from './screens/checker';
 
 import configureStore from './Redux/store/configureStore';
 
@@ -22,6 +24,8 @@ const jsx = (
       <Route path="/customer-table" exact component={CustomerTable} />
       <Route path="/playground" exact component={Playground} />
       <Route path="/tables-history" exact component={TableHistory} />
+      <Route path="/daily-total-items" exact component={DailyTotalItems} />
+      <Route path="/checker" exact component={Checker} />
     </Router>
   </Provider>
 );

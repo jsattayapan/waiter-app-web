@@ -2169,9 +2169,9 @@ class OrderLineForTransfer extends React.Component{
     }
   }
   onQuantityChange = (e) => {
-    const regex = new RegExp(`^[1-${this.props.quantity}]$`);
     const input = e.target.value;
-    if(!input || input.match(regex)){
+    var isMatch = parseInt(input) <= this.props.quantity && parseInt(input) > 0 ? true : false;
+    if(!input || isMatch){
       this.setState({
         quantity: input
       })

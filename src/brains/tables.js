@@ -85,6 +85,22 @@ export const getHistrotyTable = (callback) => {
   })
 }
 
+
+export const submitRefund = ({amount, remark, table_id, user_id}, callback) => {
+  console.log('amount: ', amount);
+  var url = `${ serverIpAddress }api/restaurant/tables/customer-tables/submit-refund`;
+  axios.post(url, {amount, remark, table_id, user_id}).then(response => {
+    if(response.data.status){
+      callback(true, response.data.msg);
+    }else{
+      callback(false, response.data.msg);
+    }
+  }).catch(e => {
+    console.log(e);
+    callback(false, 'เกิดข้อผิดพลาด');
+  })
+}
+
 // export const createCustomerTable = ({
 //   table_number,
 //   number_of_guest,
