@@ -440,7 +440,7 @@ class HistroyTableLine extends React.Component{
   render(){
     return(
 <div style={{marginTop:'-15px'}}>
-      <table class="table table-hover mt-0">
+      <table className="table table-hover mt-0">
         <tbody>
         <tr onClick={() => this.showOrders()}>
           <td style={{textAlign: 'left', width: '10%'}} ><b>{this.props.table_number}</b></td>

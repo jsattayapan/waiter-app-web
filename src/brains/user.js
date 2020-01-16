@@ -7,11 +7,13 @@ export function login(number, passcode, callback){
   const url = `${ serverIpAddress }api/users/staffs/login`;
   axios.post(url, { number, passcode, platform: 'web-app-cashier' })
     .then((res) => {
+      console.log(res);
       callback({
         status: true,
         data: res.data
       });
     }).catch(e => {
+      console.log(e.response);
       const msg = e.response !== undefined ? e.response.data.msg : 'ไม่สามารถเชื่อมต่อกับเซิฟเวอร์ได้' ;
       callback({
         status: false,

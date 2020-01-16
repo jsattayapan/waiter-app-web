@@ -219,7 +219,7 @@ class CustomerTable extends React.Component {
         errorQuantity = isNaN(quantity);
       }
 
-      var code = parseInt(splitQuantity[0]);
+      var code = splitQuantity[0];
       var setItem;
       this.props.foodItems.allFoodItems.forEach(category => {
         category.sub_category.forEach(sub_category => {
@@ -442,7 +442,12 @@ class CustomerTable extends React.Component {
   const {  payable,
     totalAmount,
     paymentType,
-    roomNumber} = payload;
+    roomNumber,
+    creditCardType,
+    creditCardNumber
+  } = payload;
+
+  console.log('CreditCard Info Submit:', creditCardType, creditCardNumber);
 
     completePayment({
       total_amount : payable,
@@ -450,7 +455,9 @@ class CustomerTable extends React.Component {
       method: paymentType,
       table_id: this.props.customerTable.id,
       user_id: this.props.user.id,
-      room_number: roomNumber
+      room_number: roomNumber,
+      creditCardType,
+      creditCardNumber
     }, () => {
       if(paymentType === 'cash'){
         setTimeout(() => {
@@ -1664,12 +1671,17 @@ class Payment extends React.Component{
       paymentType: 'cash',
       showChange: false,
       changeAmount: 0,
-      roomNumber: ''
+      roomNumber: '',
+      creditCardNumber: '',
+      creditCardType: ''
     }
   }
 
   setRoomNumber = (event) => {
     this.setState({roomNumber: event.target.value.trim()})
+  }
+  setCreditCardNumber = (event) => {
+    this.setState({creditCardNumber: event.target.value.trim()})
   }
 
   addAmount = (amount) => {
@@ -1708,6 +1720,13 @@ class Payment extends React.Component{
     }
 
   }
+
+  changeCreditCardType = (type) =>{
+    this.setState({
+      creditCardType: type
+    })
+  }
+
   paymentSubmit = () => {
     if(this.state.paymentType === 'cash'){
       this.setState({
@@ -1848,13 +1867,59 @@ class Payment extends React.Component{
               </div>
               <div className="col-sm-3">
               </div>
-            </div> : ''}
+            </div> : this.state.paymentType === 'card' ? <div className="row mt-4">
+              <div className="col-sm-12">
+                <div className="row mt-12">
+                  <div className="col-sm-4 text-center">
+                    <label style={{width: '100%'}}>
+                      <input type="radio" name="creditCardType"
+                        checked={this.state.creditCardType === 'UNION'}
+                        onClick={() => this.changeCreditCardType('UNION')}
+                      />
+                       <div style={this.paymentTypeStyle}>
+                         Union card
+                       </div>
+                    </label>
+                  </div>
+                  <div className="col-sm-4 text-center">
+                    <label style={{width: '100%'}}>
+                      <input type="radio" name="creditCardType"
+                        checked={this.state.creditCardType === 'VISA'}
+                        onClick={() => this.changeCreditCardType('VISA')}
+                      />
+                       <div style={this.paymentTypeStyle}>
+                         Visa card
+                       </div>
+                    </label>
+                  </div>
+                  <div className="col-sm-4 text-center">
+                    <label style={{width: '100%'}}>
+                      <input type="radio" name="creditCardType"
+                        checked={this.state.creditCardType === 'MASTER'}
+                        onClick={() => this.changeCreditCardType('MASTER')}
+                      />
+                       <div style={this.paymentTypeStyle}>
+                         Master card
+                       </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div className="col-sm-12">
+                <div class="input-group mb-3 center-block">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text" >หมายเลขบัตร #</span>
+                    </div>
+                    <input type="text" class="form-control" onChange={this.setCreditCardNumber} value={this.state.creditCardNumber} placeholder="Eg. xxxx-xxxx-xxxx-1234" />
+                  </div>
+              </div>
+            </div> :''}
             <div className="row mt-4">
               <div className="col-sm-6 text-center">
                 <button onClick={() => this.props.onClose()} className="btn btn-secondary">ปิด</button>
               </div>
               <div className="col-sm-6 text-center">
-                {this.state.totalAmount >= this.state.payable || this.state.paymentType === 'card' || (this.state.paymentType === 'room' && this.state.roomNumber !== '') ?
+                {this.state.totalAmount >= this.state.payable || (this.state.paymentType === 'card' && this.state.creditCardType !== '' && this.state.creditCardNumber !== '') || (this.state.paymentType === 'room' && this.state.roomNumber !== '') ?
                 <button onClick={() => this.paymentSubmit()} className="btn btn-success">ยืนยัน</button>
               : <button className="btn btn-success" disabled>ยืนยัน</button>}
               </div>

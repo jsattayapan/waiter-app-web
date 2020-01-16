@@ -79,7 +79,6 @@ export const getTableLogs = (table_id, callback) => {
 export const getTableDiscount = (table_id, callback) => {
     const url = `${ serverIpAddress }api/restaurant/tables/customer-tables/customer-table-discount/${table_id}`;
     axios.get(url).then((res) => {
-      console.log(res.data);
       callback(res.data[0]);
     })
 }
@@ -87,7 +86,6 @@ export const getTableDiscount = (table_id, callback) => {
 export const submitTableDiscount = (table_id, user_id, payload, callback) => {
   const url = `${ serverIpAddress }api/restaurant/tables/customer-tables/customer-table-discount/`;
   axios.post(url, {table_id, user_id, payload}).then(res => {
-    console.log(res);
     if(res.status === 200){
       callback();
     }
@@ -123,18 +121,22 @@ export const completePayment = ({
   method,
   table_id,
   user_id,
-  room_number
+  room_number,
+  creditCardType,
+  creditCardNumber
 }, callback) => {
 
   const receive_total_amount = method === 'cash' ? receive_amount : total_amount;
-
   const url = `${ serverIpAddress }api/restaurant/tables/customer-tables/complete-payment/`;
   axios.post(url, {total_amount,
   receive_amount: receive_total_amount,
   method,
   table_id,
   user_id,
-room_number}).then(data => {
+room_number,
+creditCardType,
+creditCardNumber
+}).then(data => {
     if(data.status === 200){
       callback();
     }else{
