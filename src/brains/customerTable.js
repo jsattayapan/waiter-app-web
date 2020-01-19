@@ -21,6 +21,17 @@ export const createCustomerTable = (payload, callback) => {
   });
 }
 
+export const submitVoidPayment = (table_id, callback) => {
+  const url = `${ serverIpAddress }api/restaurant/tables/customer-tables/void-payment`;
+  axios.post(url, {table_id}).then(response => {
+    console.log('Resonse: ', response);
+    callback(true, 'ทำการยกเลิกการจ่ายเงินสำเร็จ');
+  }).catch(e => {
+    console.log(e);
+    callback(false, 'เกิดข้อผิดพลาด');
+  });
+}
+
 export const closeCustomerTable = (customer_table_id) => {
   const url = `${ serverIpAddress }api/restaurant/tables/customer-tables/close`;
   axios.post(url, {customer_table_id}).then().catch(err => console.log(err));

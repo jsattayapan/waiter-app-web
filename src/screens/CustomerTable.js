@@ -226,6 +226,7 @@ class CustomerTable extends React.Component {
           sub_category.items.forEach(item => {
             if (item.code === code) {
               setItem = item;
+              setItem.price = this.props.customerTable.outlet === 'staff' ? item.staff_price : item.price
             }
           });
         });
@@ -315,7 +316,9 @@ class CustomerTable extends React.Component {
             item.name.toLowerCase().includes(e.target.value) ||
             item.code.toString().includes(e.target.value)
           ) {
-            filterItems.push(item);
+            var setItem = item;
+            setItem.price = this.props.customerTable.outlet === 'staff' ? item.staff_price : item.price
+            filterItems.push(setItem);
           }
         });
       });
@@ -694,12 +697,13 @@ class CustomerTable extends React.Component {
                       height: '440px',
                       overflow: 'scroll'
                     }}
+                    
                   >
                     <table width="100%">
+                      {console.log(this.props.customerTable)}
                       {this.props.customerTable.currentOrders &&
                         this.props.customerTable.currentOrders.map(
                           (order, index) => (
-
                             <tbody>
                               <tr>
                                 <td width="10%" style={{textAlign: 'center'}}>
@@ -774,6 +778,7 @@ class CustomerTable extends React.Component {
                             </tbody>
                           )
                         )}
+                        {console.log(this.state.newOrderItems)}
                       {this.state.newOrderItems.map((order, index) => (
                         <tbody>
                           <tr className="newOrderItems">
@@ -795,7 +800,10 @@ class CustomerTable extends React.Component {
                               </span>
                             </td>
                             <td width="20%">
-                              {formatNumber(order.price * order.quantity)}.-
+                              {
+                                formatNumber(order.price * order.quantity)
+
+                              }.-
                             </td>
                           </tr>
                           {order.remark && (

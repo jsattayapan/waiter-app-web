@@ -25,7 +25,8 @@ import {isAuth} from './../brains/authentication';
 import {
   getCurrentOrder,
   createCustomerTable,
-  getTableLogs
+  getTableLogs,
+  submitVoidPayment
 } from './../brains/customerTable';
 import {logout, resetTableNUser} from '../brains/user';
 
@@ -256,6 +257,28 @@ class Tables extends React.Component {
     })
   }
 
+  submitVoidPayment = (table_id) => {
+    submitVoidPayment(table_id, (status, msg) => {
+      if(status){
+        swal({
+          icon: 'success',
+          title: 'สำเร็จ',
+          text: msg
+        }).then(() => {
+          getHistrotyTable(tables => {
+            this.props.dispatch(setHistoryTables(tables))
+          })
+        });
+      }else{
+        swal({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: msg
+        });
+      }
+    })
+  }
+
   render() {
     return (
       <div className="container-fluid" >
@@ -355,6 +378,7 @@ class Tables extends React.Component {
                     room_number={table.room_number}
                     submitRefund={this.submitRefund}
                     refund_amount={table.refund_amount}
+                    submitVoidPayment={this.submitVoidPayment}
                   />
                 ))
               }
@@ -412,6 +436,21 @@ class HistroyTableLine extends React.Component{
         amount: input
       })
     }
+  }
+
+  submitVoidPayment = () => {
+    swal({
+      title:  `คุณต้องการยกเลิกการจ่ายเงินของโต๊ะ ${this.props.table_number} ?`,
+      buttons: {
+        cancel: "ปิด",
+        confirm: "ยืนยัน",
+        }
+    }).then((data) => {
+      if(data){
+        this.props.submitVoidPayment(this.props.id);
+      }
+    });
+    console.log(this.props);
   }
 
   submitRefund = () => {
@@ -486,6 +525,7 @@ class HistroyTableLine extends React.Component{
               </div>
               <div className='text-left col-sm-3 pl-4'>
                 <button className="btn btn-link" onClick={() => {this.setState({showRefund: !this.state.showRefund})}}>คืนเงิน</button>
+                <button className="btn btn-danger" onClick={() => this.submitVoidPayment()}>ยกเลิกการจ่ายเงิน</button>
                 {this.state.showRefund &&
                   <div>
                     <div class="input-group mb-3">
